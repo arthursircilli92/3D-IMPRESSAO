@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Print — Precificação</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root {
+  --bg:#f4f6f8;--surface:#fff;--surface2:#f8fafc;--border:#e2e8f0;--border2:#cbd5e1;
+  --t1:#0f172a;--t2:#475569;--t3:#94a3b8;
+  --blue:#2563eb;--blue-h:#1d4ed8;--blue-s:#eff6ff;--blue-b:#bfdbfe;
+  --green:#16a34a;--green-s:#f0fdf4;--green-b:#bbf7d0;
+  --amber:#b45309;--amber-s:#fffbeb;
+  --red:#dc2626;--red-s:#fef2f2;--red-b:#fecaca;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --sh-sm:0 1px 2px rgba(0,0,0,.05);
+  --r:7px;--r2:10px;--sidebar:212px;--hdr:52px;
+}
+[data-theme="dark"] {
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;--border2:#484f58;
+  --t1:#e6edf3;--t2:#8b949e;--t3:#484f58;
+  --blue:#58a6ff;--blue-h:#79c0ff;--blue-s:#0d2642;--blue-b:#1f4170;
+  --green:#3fb950;--green-s:#0a2215;--green-b:#1a4224;
+  --amber:#d29922;--amber-s:#271c07;
+  --red:#f85149;--red-s:#2d0e0e;--red-b:#5c1f1f;
+  --sh:0 1px 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3);
+  --sh-sm:0 1px 2px rgba(0,0,0,.3);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:14px;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--t1);line-height:1.55;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:200;height:var(--hdr);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:10px;box-shadow:var(--sh-sm);}
+.hdr-logo{width:26px;height:26px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;}
+.hdr-logo svg{width:14px;height:14px;}
+.hdr-name{font-size:14px;font-weight:700;letter-spacing:-.3px;}
+.hdr-divider{width:1px;height:16px;background:var(--border2);margin:0 4px;}
+.hdr-sub{font-size:12px;color:var(--t3);}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.hdr-saved{font-size:11px;color:var(--t3);}
+.icon-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:all .12s;}
+.icon-btn:hover{background:var(--border);color:var(--t1);}
+.icon-btn svg{width:15px;height:15px;}
+
+/* LAYOUT */
+.layout{display:flex;min-height:calc(100vh - var(--hdr));}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);padding:8px 6px;flex-shrink:0;position:sticky;top:var(--hdr);height:calc(100vh - var(--hdr));overflow-y:auto;}
+.nav-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);padding:8px 10px 3px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:pointer;color:var(--t2);font-size:13px;font-weight:500;transition:all .1s;margin-bottom:1px;user-select:none;}
+.nav-item:hover{background:var(--surface2);color:var(--t1);}
+.nav-item.active{background:var(--blue-s);color:var(--blue);font-weight:600;}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;}
+.nav-sep{height:1px;background:var(--border);margin:6px 4px;}
+
+/* MAIN */
+.main{flex:1;padding:22px;overflow-y:auto;min-width:0;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.page-title{font-size:17px;font-weight:700;letter-spacing:-.3px;margin-bottom:2px;}
+.page-sub{font-size:12.5px;color:var(--t2);margin-bottom:18px;}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:12px;box-shadow:var(--sh-sm);}
+.card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t2);}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+.span2{grid-column:1/-1;}
+
+/* FORM */
+.field{display:flex;flex-direction:column;gap:3px;}
+label{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;}
+input,select{padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--t1);width:100%;outline:none;transition:border-color .12s,box-shadow .12s;}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+[data-theme="dark"] input:focus,[data-theme="dark"] select:focus{box-shadow:0 0 0 3px rgba(88,166,255,.15);}
+input[readonly]{background:var(--surface2);color:var(--t2);cursor:default;}
+input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--blue);}
+select{cursor:pointer;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r);border:none;font-size:12.5px;font-weight:500;cursor:pointer;transition:all .12s;line-height:1.4;white-space:nowrap;}
+.btn svg{width:13px;height:13px;flex-shrink:0;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{background:var(--blue-h);}
+.btn-success{background:var(--green);color:#fff;}
+.btn-success:hover{filter:brightness(1.08);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--t1);}
+.btn-outline:hover{background:var(--surface2);}
+.btn-danger{background:var(--red-s);color:var(--red);border:1px solid var(--red-b);}
+.btn-danger:hover{filter:brightness(1.05);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-xs{padding:3px 7px;font-size:11px;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* DIVIDER */
+.div{height:1px;background:var(--border);margin:12px 0;}
+
+/* BADGE */
+.badge{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;line-height:1.6;}
+.badge-blue{background:var(--blue-s);color:var(--blue);border:1px solid var(--blue-b);}
+.badge-green{background:var(--green-s);color:var(--green);}
+
+/* COST LINES */
+.cost-line{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.cost-line:last-child{border-bottom:none;}
+.cl-label{color:var(--t2);}
+.cl-val{font-weight:600;font-variant-numeric:tabular-nums;}
+
+/* RESULT TOTAL */
+.result-total{background:var(--blue);color:#fff;border-radius:var(--r);padding:13px 15px;margin:10px 0;display:flex;justify-content:space-between;align-items:center;}
+.rt-label{font-size:11px;opacity:.8;margin-bottom:2px;}
+.rt-value{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px;}
+.rt-sub{font-size:11px;opacity:.6;margin-top:1px;}
+
+/* MP RESULTS */
+.mp-result{border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:8px;background:var(--surface2);}
+.mp-result-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;}
+.mp-name{font-weight:700;font-size:13px;}
+.mp-fees-info{font-size:11px;color:var(--t3);margin-top:1px;}
+.mp-price{font-size:18px;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums;text-align:right;}
+.mp-price-lbl{font-size:10px;color:var(--t3);text-align:right;}
+.mp-fee-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px;}
+.mp-chip{background:var(--red-s);color:var(--red);border:1px solid var(--red-b);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:500;}
+.mp-profits{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.mp-profit{border-radius:5px;padding:7px 8px;text-align:center;}
+.pp-l{font-size:10px;color:var(--t3);margin-bottom:1px;}
+.pp-v{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;}
+.mp-profit.bruto{background:var(--amber-s);}
+.mp-profit.bruto .pp-v{color:var(--amber);}
+.mp-profit.liquido{background:var(--green-s);}
+.mp-profit.liquido .pp-v{color:var(--green);}
+.mp-profit.margem{background:var(--blue-s);}
+.mp-profit.margem .pp-v{color:var(--blue);}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{text-align:left;padding:8px 11px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap;}
+.tbl td{padding:6px 11px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tbody tr:hover td{background:var(--surface2);}
+.tbl input,.tbl select{padding:4px 7px;font-size:12.5px;}
+
+/* EMB ROWS */
+.emb-hdr,.emb-row{display:grid;grid-template-columns:2fr 58px 95px 82px 28px;gap:5px;align-items:center;}
+.emb-hdr{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);font-weight:600;padding-bottom:5px;border-bottom:1px solid var(--border);margin-bottom:6px;}
+.emb-row{margin-bottom:5px;}
+.emb-row input{padding:5px 7px;font-size:13px;}
+.emb-sub{font-size:12px;color:var(--t2);font-weight:500;font-variant-numeric:tabular-nums;}
+
+/* COST ROWS */
+.cost-row{display:grid;grid-template-columns:2fr 120px 28px;gap:7px;align-items:center;margin-bottom:6px;}
+.cost-row input{padding:6px 8px;font-size:13px;}
+
+/* SOLAR ROW */
+.solar-row{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--green-s);border:1px solid var(--green-b);border-radius:var(--r);margin-top:8px;}
+.solar-label{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.04em;flex:1;}
+.solar-row input{width:110px;border-color:var(--green-b);}
+
+/* INFO BOX */
+.info-box{background:var(--blue-s);border:1px solid var(--blue-b);border-radius:var(--r);padding:11px 13px;font-size:13px;color:var(--blue);}
+.info-box.green{background:var(--green-s);border-color:var(--green-b);color:var(--green);}
+
+/* PRODUCT INDICATOR */
+.product-indicator{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:var(--r);margin-bottom:12px;border:1px solid var(--border);background:var(--surface);}
+.pi-code{font-family:'SF Mono','Fira Code',monospace;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;}
+.pi-code.new-code{background:var(--blue-s);color:var(--blue);border:1px solid var(--blue-b);}
+.pi-code.saved-code{background:var(--green-s);color:var(--green);border:1px solid var(--green-b);}
+.pi-name{font-size:13px;color:var(--t2);flex:1;}
+.pi-clear{cursor:pointer;color:var(--t3);font-size:15px;line-height:1;padding:2px 5px;border-radius:4px;transition:all .1s;}
+.pi-clear:hover{background:var(--red-s);color:var(--red);}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:11px;}
+.si-wrap{position:relative;}
+.si-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--t3);pointer-events:none;}
+.si-wrap input{padding-left:30px;}
+.search-dd{position:absolute;top:calc(100% + 2px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);z-index:100;max-height:230px;overflow-y:auto;box-shadow:var(--sh);display:none;}
+.sd-item{padding:9px 13px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;}
+.sd-item:last-child{border-bottom:none;}
+.sd-item:hover{background:var(--blue-s);}
+.si-code{font-family:monospace;font-weight:700;color:var(--blue);margin-right:7px;font-size:11.5px;}
+.si-sub{font-size:11px;color:var(--t3);margin-top:1px;}
+
+/* CALC LAYOUT */
+.calc-layout{display:grid;grid-template-columns:1fr 355px;gap:12px;align-items:start;}
+.results-panel{position:sticky;top:calc(var(--hdr) + 22px);}
+
+/* CATALOG STATS */
+.cat-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;box-shadow:var(--sh-sm);}
+.stat-val{font-size:20px;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums;letter-spacing:-.5px;}
+.stat-lbl{font-size:11px;color:var(--t3);margin-top:1px;text-transform:uppercase;letter-spacing:.04em;}
+
+/* SUMMARY BOX */
+.sum-box{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-bottom:1px solid var(--border);font-size:13px;}
+.sum-row:last-child{border-bottom:none;}
+.sr-label{color:var(--t2);}
+.sr-val{font-weight:600;font-variant-numeric:tabular-nums;}
+.sum-total{background:var(--surface2);display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-top:2px solid var(--border2);font-weight:700;font-size:14.5px;}
+
+/* IMAGE UPLOAD */
+.img-upload-area{display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border:1px dashed var(--border2);border-radius:var(--r);cursor:pointer;transition:border-color .12s;}
+.img-upload-area:hover{border-color:var(--blue);}
+.img-upload-area input[type=file]{display:none;}
+.img-upload-label{display:flex;align-items:center;gap:7px;cursor:pointer;color:var(--t2);font-size:12.5px;flex:1;}
+.img-upload-label svg{width:16px;height:16px;flex-shrink:0;}
+.img-thumb{width:46px;height:46px;object-fit:cover;border-radius:5px;border:1px solid var(--border);display:none;flex-shrink:0;}
+.img-remove{background:none;border:none;cursor:pointer;color:var(--t3);padding:2px 5px;border-radius:4px;font-size:13px;transition:all .1s;display:none;}
+.img-remove:hover{background:var(--red-s);color:var(--red);}
+
+/* IMAGE TOOLTIP IN CATALOG */
+.img-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:5px;background:var(--blue-s);color:var(--blue);cursor:pointer;border:1px solid var(--blue-b);}
+.img-trigger svg{width:14px;height:14px;}
+.img-popup{display:none;position:fixed;z-index:600;pointer-events:none;}
+.img-popup img{width:180px;height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,.18);display:block;}
+.img-trigger:hover + .img-popup,.img-popup:hover{display:block;}
+.no-img{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:5px;color:var(--t3);}
+.no-img svg{width:14px;height:14px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);width:100%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);}
+.modal-title{font-size:15px;font-weight:700;}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--t2);font-size:20px;line-height:1;padding:2px 6px;border-radius:4px;}
+.modal-close:hover{background:var(--red-s);color:var(--red);}
+.modal-body{padding:16px 18px;overflow-y:auto;flex:1;}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.bk-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);margin-bottom:7px;background:var(--surface2);}
+.bk-item:hover{border-color:var(--blue-b);}
+.bk-ts{font-size:12.5px;color:var(--t1);font-weight:500;flex:1;}
+.bk-age{font-size:11px;color:var(--t3);}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:9px 16px;border-radius:var(--r);font-size:13px;font-weight:600;color:#fff;opacity:0;transition:opacity .2s;pointer-events:none;z-index:1000;box-shadow:var(--sh);}
+.toast.show{opacity:1;}
+
+/* RESPONSIVE */
+@media(max-width:980px){.calc-layout{grid-template-columns:1fr;}.results-panel{position:static;}}
+@media(max-width:720px){.sidebar{width:48px;}.nav-item span{display:none;}.nav-group-label{display:none;}.g3{grid-template-columns:1fr 1fr;}.cat-stats{grid-template-columns:1fr 1fr;}}
+@media(max-width:520px){.main{padding:12px;}.g2,.g3{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  </div>
+  <span class="hdr-name">3D Print</span>
+  <div class="hdr-divider"></div>
+  <span class="hdr-sub">Precificação</span>
+  <div class="hdr-right">
+    <span id="presence-indicator" style="display:none;align-items:center;gap:5px;font-size:11px;color:var(--green);background:var(--green-s);border:1px solid var(--green-b);padding:2px 9px;border-radius:999px;">
+      <span style="width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;"></span>
+      <span></span>
+    </span>
+    <span class="hdr-saved" id="last-saved">Não salvo</span>
+    <button class="icon-btn" onclick="exportData()" title="Exportar backup JSON">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+    <button class="icon-btn" onclick="importData()" title="Importar backup JSON">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </button>
+    <button class="icon-btn" onclick="showBackups()" title="Histórico de backups automáticos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </button>
+    <button class="icon-btn" onclick="toggleTheme()" title="Alternar tema" id="theme-btn">
+      <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="theme-icon-sun" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="nav-group-label">Principal</div>
+  <div class="nav-item active" data-tab="calcular" onclick="showTab('calcular',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><circle cx="8" cy="11" r=".5" fill="currentColor"/><circle cx="12" cy="11" r=".5" fill="currentColor"/><circle cx="16" cy="11" r=".5" fill="currentColor"/><circle cx="8" cy="15" r=".5" fill="currentColor"/><circle cx="12" cy="15" r=".5" fill="currentColor"/><line x1="16" y1="15" x2="16" y2="19"/><line x1="14" y1="17" x2="18" y2="17"/></svg>
+    <span>Calcular</span>
+  </div>
+  <div class="nav-item" data-tab="catalogo" onclick="showTab('catalogo',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    <span>Catálogo</span>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-group-label">Configurar</div>
+  <div class="nav-item" data-tab="custos" onclick="showTab('custos',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    <span>Custos Fixos</span>
+  </div>
+  <div class="nav-item" data-tab="materiais" onclick="showTab('materiais',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+    <span>Materiais</span>
+  </div>
+  <div class="nav-item" data-tab="impressoras" onclick="showTab('impressoras',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    <span>Impressoras</span>
+  </div>
+  <div class="nav-item" data-tab="marketplaces" onclick="showTab('marketplaces',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    <span>Marketplaces</span>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- ===== CALCULAR ===== -->
+<div class="tab-panel active" id="tab-calcular">
+  <div class="page-title">Calcular Precificação</div>
+  <div class="page-sub">Preencha os dados da peça. Os resultados atualizam em tempo real.</div>
+
+  <div class="search-wrap">
+    <div class="si-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="search-input" placeholder="Buscar peça por código (P001) ou nome para editar..." oninput="onSearchInput()" onfocus="onSearchFocus()" autocomplete="off">
+    </div>
+    <div class="search-dd" id="search-dd"></div>
+  </div>
+
+  <div class="product-indicator" id="product-indicator">
+    <span class="pi-code new-code" id="pi-code">NOVA PEÇA</span>
+    <span class="pi-name" id="pi-name">Preencha os dados e salve no catálogo</span>
+    <span class="pi-clear" onclick="clearProduct()" title="Nova peça">✕</span>
+  </div>
+
+  <div class="calc-layout">
+    <!-- LEFT -->
+    <div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:13px">Modelo</div>
+        <div class="g2">
+          <div class="field span2"><label>Nome da Peça</label><input type="text" id="c_nome" placeholder="Ex: Suporte articulado para celular" oninput="calcular()"></div>
+          <div class="field span2"><label>Arquivo STL</label><input type="text" id="c_stl" placeholder="nome_do_arquivo.stl" oninput="calcular()"></div>
+          <div class="field span2">
+            <label>Foto da Peça</label>
+            <div class="img-upload-area" onclick="document.getElementById('img-upload').click()">
+              <input type="file" id="img-upload" accept="image/*" onchange="handleImageUpload(this)">
+              <label class="img-upload-label" onclick="event.stopPropagation();document.getElementById('img-upload').click()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span id="img-upload-label-text">Clique para adicionar uma foto da peça</span>
+              </label>
+              <img id="img-thumb" class="img-thumb" src="" alt="">
+              <button class="img-remove" id="img-remove-btn" onclick="event.stopPropagation();clearImage()" title="Remover foto">✕</button>
+            </div>
+          </div>
+          <div class="field"><label>Impressora</label><select id="c_impressora" onchange="calcular()"><option value="">Selecionar...</option></select></div>
+          <div class="field"><label>Tempo de Impressão (h)</label><input type="number" id="c_tempo" step="0.1" min="0" value="1" oninput="calcular()"></div>
+          <div class="field"><label>Peso de Filamento (g)</label><input type="number" id="c_peso" step="1" min="0" value="50" oninput="calcular()"></div>
+          <div class="field"><label>Material</label><select id="c_material" onchange="calcular()"><option value="">Selecionar...</option></select></div>
+          <div class="field"><label>Quantidade na Mesa</label><input type="number" id="c_qtd" step="1" min="1" value="1" oninput="calcular()"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">Embalagens e Acessórios</div>
+          <button class="btn btn-outline btn-sm" onclick="addEmbRow()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Adicionar
+          </button>
+        </div>
+        <div class="emb-hdr"><span>Item</span><span>Qtd</span><span>Custo un. (R$)</span><span>Subtotal</span><span></span></div>
+        <div id="emb-rows"></div>
+        <div style="text-align:right;font-size:12px;color:var(--t2);padding-top:6px;border-top:1px solid var(--border);">
+          Total: <strong id="emb-total" style="font-variant-numeric:tabular-nums;">R$ 0,00</strong>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:13px">Ajustes de Cálculo</div>
+        <div class="g3">
+          <div class="field"><label>Taxa de Falhas (%)</label><input type="number" id="c_falhas" step="1" min="0" max="50" value="10" oninput="calcular()"></div>
+          <div class="field"><label>Markup (multiplicador)</label><input type="number" id="c_markup" step="0.1" min="1" value="3" oninput="calcular()"></div>
+          <div class="field"><label>Unidades previstas / mês</label><input type="number" id="c_unidades_mes" step="1" min="1" value="40" oninput="calcular()"></div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:13px;">
+        <div class="btn-row">
+          <button class="btn btn-success" onclick="saveProduct()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Salvar no Catálogo
+          </button>
+          <button class="btn btn-outline" onclick="clearProduct()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Nova Peça
+          </button>
+        </div>
+        <div style="font-size:11.5px;color:var(--t3);margin-top:7px;" id="save-hint">Ao salvar, a peça recebe um código permanente (P001, P002…)</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div class="results-panel">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Composição do Custo</div>
+        <div class="cost-line"><span class="cl-label">Material</span><span class="cl-val" id="r_mat">R$ 0,00</span></div>
+        <div class="cost-line"><span class="cl-label">Energia elétrica</span><span class="cl-val" id="r_ener">R$ 0,00</span></div>
+        <div class="cost-line"><span class="cl-label">Amortização impressora</span><span class="cl-val" id="r_amort">R$ 0,00</span></div>
+        <div class="cost-line"><span class="cl-label">Embalagem / acessórios</span><span class="cl-val" id="r_emb">R$ 0,00</span></div>
+        <div class="cost-line"><span class="cl-label">Custo fixo rateado</span><span class="cl-val" id="r_fixo">R$ 0,00</span></div>
+        <div class="cost-line"><span class="cl-label">Reserva de falhas</span><span class="cl-val" id="r_falha">R$ 0,00</span></div>
+        <div class="result-total">
+          <div><div class="rt-label">Custo Unitário</div><div class="rt-sub" id="r_custo_info">—</div></div>
+          <div class="rt-value" id="r_custo_un">R$ 0,00</div>
+        </div>
+        <div style="text-align:center;font-size:12.5px;color:var(--t2);">
+          Preço base (custo × markup)
+          <div style="font-size:18px;font-weight:800;color:var(--blue);margin-top:2px;font-variant-numeric:tabular-nums;" id="r_preco_base">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Preço por Canal de Venda</div>
+        <div id="mp-results"><div style="text-align:center;color:var(--t3);padding:18px 0;font-size:13px;">Configure canais na aba Marketplaces</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CATÁLOGO ===== -->
+<div class="tab-panel" id="tab-catalogo">
+  <div class="page-title">Catálogo de Peças</div>
+  <div class="page-sub">Todas as peças salvas. Clique em Editar para atualizar a precificação.</div>
+  <div class="cat-stats">
+    <div class="stat-box"><div class="stat-val" id="cat-total">0</div><div class="stat-lbl">Peças no catálogo</div></div>
+    <div class="stat-box"><div class="stat-val" id="cat-avg-c">—</div><div class="stat-lbl">Custo médio</div></div>
+    <div class="stat-box"><div class="stat-val" id="cat-avg-p">—</div><div class="stat-lbl">Preço base médio</div></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <div class="si-wrap" style="flex:1;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="cat-search" placeholder="Filtrar por código ou nome..." oninput="renderCatalog()">
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="showTab('calcular',document.querySelector('[data-tab=calcular]'));clearProduct()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nova Peça
+    </button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="overflow-x:auto;">
+      <table class="tbl" id="cat-table">
+        <thead><tr><th>Código</th><th>Nome</th><th>STL</th><th>Material</th><th>Tempo</th><th>Peso</th><th>Custo Un.</th><th>Preço Base</th><th>Atualizado</th><th style="text-align:center">Ações</th></tr></thead>
+        <tbody id="cat-body"><tr><td colspan="10" style="text-align:center;color:var(--t3);padding:28px;">Nenhuma peça salva ainda.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CUSTOS FIXOS ===== -->
+<div class="tab-panel" id="tab-custos">
+  <div class="page-title">Custos Fixos Mensais</div>
+  <div class="page-sub">O que você paga todo mês. São rateados por unidade produzida.</div>
+  <div class="g2" style="align-items:start;">
+    <div>
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">Despesas Mensais</div>
+          <button class="btn btn-outline btn-sm" onclick="addCostRow()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Adicionar
+          </button>
+        </div>
+        <div id="cost-rows"></div>
+        <div class="solar-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;color:var(--green);flex-shrink:0;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+          <div class="solar-label">Crédito Painel Solar (desconto na conta)</div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <span style="font-weight:700;color:var(--green);font-size:13px;">- R$</span>
+            <input type="number" id="cf_solar" step="0.01" min="0" value="0" style="width:100px;border-color:var(--green-b);" oninput="saveCustos()">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:13px">Energia</div>
+        <div class="g2">
+          <div class="field"><label>Custo por kWh (R$)</label><input type="number" id="cf_kwh" step="0.01" min="0" value="0.84" oninput="saveCustos()"></div>
+          <div class="field"><label>Faturamento Previsto (R$/mês)</label><input type="number" id="cf_faturamento" step="100" min="0" value="4000" oninput="saveCustos()"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Resumo</div>
+        <div class="sum-box">
+          <div class="sum-row"><span class="sr-label">Total despesas</span><span class="sr-val" id="cf_total_d">R$ 0,00</span></div>
+          <div class="sum-row"><span class="sr-label" style="color:var(--green)">(-) Crédito solar</span><span class="sr-val" style="color:var(--green)" id="cf_solar_d">- R$ 0,00</span></div>
+          <div class="sum-total"><span>Custo fixo líquido</span><span id="cf_liq_d">R$ 0,00</span></div>
+        </div>
+        <div class="div"></div>
+        <div class="info-box green">
+          <div style="font-size:11px;margin-bottom:5px;">Custo fixo por unidade — base: <strong id="cf_unid_ref">40</strong> un./mês</div>
+          <div style="font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;" id="cf_por_un">R$ 0,00</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:4px;" id="cf_diss">Dissolução: 0,00% do faturamento</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MATERIAIS ===== -->
+<div class="tab-panel" id="tab-materiais">
+  <div class="page-title">Materiais</div>
+  <div class="page-sub">Filamentos, resinas e outros materiais com preço por kg.</div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div class="card-title" style="margin:0;">Catálogo de Materiais</div>
+      <button class="btn btn-primary btn-sm" onclick="addMaterial()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Material
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tbl"><thead><tr><th>Nome</th><th>Tipo</th><th>Preço / kg (R$)</th><th>Estoque (kg)</th><th>Observações</th><th></th></tr></thead><tbody id="mat-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== IMPRESSORAS ===== -->
+<div class="tab-panel" id="tab-impressoras">
+  <div class="page-title">Impressoras</div>
+  <div class="page-sub">Cadastre as impressoras para calcular consumo de energia e amortização.</div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div class="card-title" style="margin:0;">Minhas Impressoras</div>
+      <button class="btn btn-primary btn-sm" onclick="addImpressora()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nova Impressora
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tbl"><thead><tr><th>Nome</th><th>Potência (W)</th><th>Valor de Compra (R$)</th><th>Vida Útil (horas)</th><th>Amort. / hora</th><th></th></tr></thead><tbody id="imp-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MARKETPLACES ===== -->
+<div class="tab-panel" id="tab-marketplaces">
+  <div class="page-title">Marketplaces e Canais de Venda</div>
+  <div class="page-sub">Configure as taxas de cada canal. Marque como ativo para aparecer no resultado.</div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div class="card-title" style="margin:0;">Canais Cadastrados</div>
+      <button class="btn btn-primary btn-sm" onclick="addMarketplace()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Canal
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr><th>Canal</th><th>Comissão %</th><th>Taxa Cartão %</th><th>Anúncio %</th><th>Imposto %</th><th>Taxa Fixa R$</th><th>Ativo</th><th></th></tr></thead>
+        <tbody id="mp-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="info-box" style="margin-top:12px;">
+    <strong>Fórmula do preço:</strong> Preço = (Preço Base + Taxa Fixa) ÷ (1 − soma das % de taxas)<br>
+    <span style="font-size:12px;opacity:.8;">Garante que após as deduções, você receba exatamente o Preço Base desejado.</span>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- BACKUP MODAL -->
+<div class="modal-overlay hidden" id="bk-modal" onclick="if(event.target===this)closeBkModal()">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Histórico de Backups Automáticos</div>
+      <button class="modal-close" onclick="closeBkModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:14px;font-size:12.5px;">
+        O app salva automaticamente as <strong>últimas 10 versões</strong> a cada alteração.<br>
+        Clique em <strong>Restaurar</strong> para voltar a uma versão anterior, ou <strong>Baixar</strong> para salvar o snapshot como arquivo.
+      </div>
+      <div id="bk-list"><div style="text-align:center;color:var(--t3);padding:20px;">Nenhum backup ainda.</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeBkModal()">Fechar</button>
+      <button class="btn btn-primary" onclick="exportData()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar dados atuais
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== SUPABASE ====================
+const SUPABASE_URL = 'https://krtaoiybqxivdvuksjhi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtydGFvaXlicXhpdmR2dWtzamhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjAzNzksImV4cCI6MjA5MzczNjM3OX0.j_sYEkaBO2wkrO_uoUVqqWksiol4g1B-UR-9Q-xpBYw';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SESSION_ID = Math.random().toString(36).slice(2, 10);
+const USER_KEY = 'print3d_username';
+let userName = localStorage.getItem(USER_KEY) || '';
+
+// ==================== STORAGE ====================
+const SK='print3d_v3';
+let D={
+  nextId:1,catalog:[],
+  materiais:[
+    {id:1,nome:'PLA Básico',tipo:'Filamento',preco_kg:60,estoque:1,obs:''},
+    {id:2,nome:'PETG',tipo:'Filamento',preco_kg:75,estoque:1,obs:''},
+    {id:3,nome:'ABS',tipo:'Filamento',preco_kg:65,estoque:0,obs:''},
+  ],
+  impressoras:[{id:1,nome:'Ender 3',potencia:350,valor:1500,vida_util:5000}],
+  marketplaces:[
+    {id:1,nome:'Mercado Livre',comissao:14,cartao:0,anuncio:0,imposto:8,taxa_fixa:6.75,ativo:true},
+    {id:2,nome:'Shopee',comissao:20,cartao:0,anuncio:0,imposto:0,taxa_fixa:4.00,ativo:true},
+    {id:3,nome:'Venda Direta',comissao:0,cartao:5,anuncio:0,imposto:8,taxa_fixa:0,ativo:true},
+  ],
+  custos:{items:[
+    {id:1,nome:'Aluguel / Espaço',valor:0},{id:2,nome:'Assinaturas de Software',valor:50},
+    {id:3,nome:'Plataformas e-commerce',valor:60},{id:4,nome:'Taxa MEI',valor:75.90},
+    {id:5,nome:'Publicidade fixa',valor:0},{id:6,nome:'Internet',valor:100},
+  ],solar:0,kwh:0.84,faturamento:4000},
+  embItems:[{nome:'Embalagem',qty:1,custo_un:2.50}],
+};
+let editingProduct=null;
+let currentImage=null;
+
+async function load() {
+  try {
+    const { data, error } = await sb.from('app_data').select('data').eq('id','main').maybeSingle();
+    if (data && data.data) {
+      D = { ...D, ...data.data };
+      localStorage.setItem(SK, JSON.stringify(D));
+      return;
+    }
+  } catch(e) { console.warn('Supabase load failed:', e); }
+  // fallback localStorage
+  try {
+    const s = localStorage.getItem(SK);
+    if (s) D = { ...D, ...JSON.parse(s) };
+  } catch(e) {}
+}
+function save() {
+  try {
+    createBackup();
+    localStorage.setItem(SK, JSON.stringify(D));
+    document.getElementById('last-saved').textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR');
+  } catch(e) {}
+  pushToSupabase();
+}
+
+async function pushToSupabase() {
+  try {
+    await sb.from('app_data').upsert({
+      id: 'main',
+      data: D,
+      updated_by: SESSION_ID,
+      updated_at: new Date().toISOString()
+    });
+  } catch(e) { console.warn('Supabase save failed:', e); }
+}
+function toast(msg,bg='#1e293b'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.style.background=bg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+// ==================== IMAGE ====================
+function handleImageUpload(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>3*1024*1024){toast('Imagem muito grande (máx 3MB)','#dc2626');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    currentImage=e.target.result;
+    const thumb=document.getElementById('img-thumb');
+    const lbl=document.getElementById('img-upload-label-text');
+    const rmv=document.getElementById('img-remove-btn');
+    if(thumb){thumb.src=currentImage;thumb.style.display='block';}
+    if(lbl)lbl.textContent=file.name;
+    if(rmv)rmv.style.display='';
+  };
+  reader.readAsDataURL(file);
+}
+function clearImage(){
+  currentImage=null;
+  const inp=document.getElementById('img-upload');
+  const thumb=document.getElementById('img-thumb');
+  const lbl=document.getElementById('img-upload-label-text');
+  const rmv=document.getElementById('img-remove-btn');
+  if(inp)inp.value='';
+  if(thumb){thumb.style.display='none';thumb.src='';}
+  if(lbl)lbl.textContent='Clique para adicionar uma foto da peça';
+  if(rmv)rmv.style.display='none';
+}
+function setImagePreview(src){
+  currentImage=src||null;
+  const thumb=document.getElementById('img-thumb');
+  const lbl=document.getElementById('img-upload-label-text');
+  const rmv=document.getElementById('img-remove-btn');
+  if(src){
+    if(thumb){thumb.src=src;thumb.style.display='block';}
+    if(lbl)lbl.textContent='Foto carregada';
+    if(rmv)rmv.style.display='';
+  } else {
+    clearImage();
+  }
+}
+
+// Floating image popup on hover
+let _popupEl=null;
+function showImgPopup(base64,triggerEl){
+  if(!_popupEl){_popupEl=document.createElement('div');_popupEl.className='img-popup';_popupEl.innerHTML='<img src="" alt="Foto da peça">';document.body.appendChild(_popupEl);}
+  _popupEl.querySelector('img').src=base64;
+  const rect=triggerEl.getBoundingClientRect();
+  const popW=186,popH=168;
+  let top=rect.top-popH-8;
+  let left=rect.left+rect.width/2-popW/2;
+  if(top<8)top=rect.bottom+8;
+  if(left<8)left=8;
+  if(left+popW>window.innerWidth-8)left=window.innerWidth-popW-8;
+  _popupEl.style.cssText=`display:block;top:${top}px;left:${left}px;`;
+}
+function hideImgPopup(){if(_popupEl)_popupEl.style.display='none';}
+
+// ==================== BACKUP ====================
+const BK='print3d_backups_v1';
+const MAX_BK=10;
+
+function createBackup(){
+  try{
+    const bks=JSON.parse(localStorage.getItem(BK)||'[]');
+    // Avoid duplicate snapshots if data didn't change
+    const snap=JSON.stringify(D);
+    if(bks.length&&bks[0].snap===snap)return;
+    bks.unshift({ts:new Date().toISOString(),snap});
+    if(bks.length>MAX_BK)bks.length=MAX_BK;
+    localStorage.setItem(BK,JSON.stringify(bks));
+  }catch(e){console.warn('Backup falhou:',e);}
+}
+
+function exportData(){
+  const json=JSON.stringify(D,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const ts=new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
+  a.download=`3dprint_backup_${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup exportado!','#16a34a');
+}
+
+function importData(){
+  if(!confirm('Importar um arquivo de backup?\n\nOs dados atuais serão substituídos.\nUm backup automático será criado antes de substituir.'))return;
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.json,application/json';
+  inp.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const parsed=JSON.parse(ev.target.result);
+        if(!parsed.catalog&&!parsed.materiais){toast('Arquivo inválido','#dc2626');return;}
+        createBackup(); // salva estado atual antes de sobrescrever
+        D={...D,...parsed};
+        save();
+        renderAll();
+        toast('Dados restaurados!','#16a34a');
+      }catch(err){toast('Erro ao ler arquivo','#dc2626');}
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+function showBackups(){
+  const bks=JSON.parse(localStorage.getItem(BK)||'[]');
+  const list=document.getElementById('bk-list');
+  if(!bks.length){
+    list.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;">Nenhum backup ainda. Salve alguma peça primeiro.</div>';
+  } else {
+    list.innerHTML=bks.map((bk,i)=>{
+      const d=new Date(bk.ts);
+      const date=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const time=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const snap=JSON.parse(bk.snap);
+      const npecas=snap.catalog?snap.catalog.length:0;
+      const age=_relativeTime(d);
+      return`<div class="bk-item">
+        <div style="flex:1;">
+          <div class="bk-ts">${date} às ${time}</div>
+          <div class="bk-age">${age} · ${npecas} peça${npecas!==1?'s':''} no catálogo</div>
+        </div>
+        <button class="btn btn-xs btn-outline" onclick="downloadBackup(${i})">Baixar</button>
+        <button class="btn btn-xs btn-primary" onclick="restoreBackup(${i})">Restaurar</button>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('bk-modal').classList.remove('hidden');
+}
+
+function closeBkModal(){document.getElementById('bk-modal').classList.add('hidden');}
+
+function downloadBackup(idx){
+  const bks=JSON.parse(localStorage.getItem(BK)||'[]');
+  if(!bks[idx])return;
+  const blob=new Blob([bks[idx].snap],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const ts=bks[idx].ts.slice(0,19).replace('T','_').replace(/:/g,'-');
+  a.download=`3dprint_backup_${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Snapshot baixado!','#16a34a');
+}
+
+function restoreBackup(idx){
+  const bks=JSON.parse(localStorage.getItem(BK)||'[]');
+  if(!bks[idx])return;
+  const d=new Date(bks[idx].ts);
+  const label=d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  if(!confirm(`Restaurar backup de ${label}?\n\nO estado atual será salvo como backup antes de restaurar.`))return;
+  createBackup();
+  try{
+    D={...D,...JSON.parse(bks[idx].snap)};
+    save();renderAll();
+    closeBkModal();
+    toast('Backup restaurado!','#16a34a');
+  }catch(e){toast('Erro ao restaurar','#dc2626');}
+}
+
+function _relativeTime(date){
+  const diff=(Date.now()-date.getTime())/1000;
+  if(diff<60)return 'agora mesmo';
+  if(diff<3600)return `há ${Math.floor(diff/60)} min`;
+  if(diff<86400)return `há ${Math.floor(diff/3600)}h`;
+  return `há ${Math.floor(diff/86400)} dia${Math.floor(diff/86400)>1?'s':''}`;
+}
+
+function renderAll(){
+  if(D.custos){
+    const el=id=>document.getElementById(id);
+    if(el('cf_kwh'))el('cf_kwh').value=D.custos.kwh||0.84;
+    if(el('cf_faturamento'))el('cf_faturamento').value=D.custos.faturamento||4000;
+    if(el('cf_solar'))el('cf_solar').value=D.custos.solar||0;
+  }
+  editingProduct=null;currentImage=null;
+  renderEmbRows();renderCostRows();renderMateriais();renderImpressoras();renderMarketplaces();
+  updateSelects();updateProductIndicator();updateCustosSummary();calcular();
+  clearImage();
+}
+
+// ==================== THEME ====================
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  localStorage.setItem('theme',isDark?'light':'dark');
+  document.getElementById('theme-icon-moon').style.display=isDark?'':'none';
+  document.getElementById('theme-icon-sun').style.display=isDark?'none':'';
+}
+function loadTheme(){
+  const t=localStorage.getItem('theme')||'light';
+  document.documentElement.setAttribute('data-theme',t);
+  if(t==='dark'){
+    document.getElementById('theme-icon-moon').style.display='none';
+    document.getElementById('theme-icon-sun').style.display='';
+  }
+}
+
+// ==================== NAV ====================
+function showTab(tab,el){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(el)el.classList.add('active');
+  if(tab==='calcular'){updateSelects();calcular();}
+  if(tab==='catalogo')renderCatalog();
+  if(tab==='custos')updateCustosSummary();
+}
+
+// ==================== FORMAT ====================
+function R(v){return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function n(id){return parseFloat(document.getElementById(id)?.value)||0;}
+function fmtDate(iso){return iso?new Date(iso).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'-';}
+function code(id){return 'P'+String(id).padStart(3,'0');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+
+// ==================== CALCULATOR ====================
+function calcInputs(){
+  return{
+    tempo:n('c_tempo'),peso:n('c_peso'),qtd:Math.max(1,n('c_qtd')),
+    falhas:n('c_falhas'),markup:Math.max(1,n('c_markup')),unidades:Math.max(1,n('c_unidades_mes')),
+    matId:parseInt(document.getElementById('c_material')?.value)||null,
+    impId:parseInt(document.getElementById('c_impressora')?.value)||null,
+  };
+}
+
+function calcular(){
+  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId}=calcInputs();
+  const mat=D.materiais.find(m=>m.id===matId);
+  const imp=D.impressoras.find(p=>p.id===impId);
+  const kwh=D.custos.kwh||0.84;
+
+  const c_mat=mat?(peso/1000)*mat.preco_kg:0;
+  const c_ener=imp?(imp.potencia/1000)*tempo*kwh:0;
+  const c_amort=imp&&imp.vida_util>0?(imp.valor/imp.vida_util)*tempo:0;
+  const emb=calcEmbTotal();
+  const c_emb=emb/qtd;
+  const fixo_total=D.custos.items.reduce((s,i)=>s+(i.valor||0),0);
+  const fixo_liq=Math.max(0,fixo_total-(D.custos.solar||0));
+  const c_fixo=fixo_liq/unidades;
+  const sub=c_mat+c_ener+c_amort+c_emb+c_fixo;
+  const c_falha=sub*(falhas/100);
+  const custo_un=sub+c_falha;
+  const preco_base=custo_un*markup;
+
+  set('r_mat',R(c_mat));set('r_ener',R(c_ener));set('r_amort',R(c_amort));
+  set('r_emb',R(c_emb));set('r_fixo',R(c_fixo));set('r_falha',R(c_falha));
+  set('r_custo_un',R(custo_un));
+  set('r_custo_info',`${qtd} na mesa → total ${R(custo_un*qtd)}`);
+  set('r_preco_base',R(preco_base));
+  set('emb-total',R(emb));
+  updateCustosSummary(fixo_total,D.custos.solar||0,fixo_liq,c_fixo,unidades);
+  renderMpResults(custo_un,preco_base);
+}
+
+function calcEmbTotal(){return D.embItems.reduce((s,i)=>s+((i.qty||0)*(i.custo_un||0)),0);}
+
+function renderMpResults(custo_un,preco_base){
+  const c=document.getElementById('mp-results');
+  const ativos=D.marketplaces.filter(m=>m.ativo);
+  if(!ativos.length){c.innerHTML='<div style="text-align:center;color:var(--t3);padding:16px 0;font-size:13px;">Nenhum canal ativo</div>';return;}
+  c.innerHTML=ativos.map(mp=>{
+    const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+    const preco=soma<1?(preco_base+mp.taxa_fixa)/(1-soma):preco_base+mp.taxa_fixa;
+    const deducoes=preco*soma+mp.taxa_fixa;
+    const lucro_bruto=preco-custo_un;
+    const lucro_liq=preco-deducoes-custo_un;
+    const margem=preco>0?(lucro_liq/preco*100):0;
+    const chips=[];
+    if(mp.comissao>0)chips.push(`Comissão ${mp.comissao}%: -${R(preco*mp.comissao/100)}`);
+    if(mp.cartao>0)chips.push(`Cartão ${mp.cartao}%: -${R(preco*mp.cartao/100)}`);
+    if(mp.anuncio>0)chips.push(`Anúncio ${mp.anuncio}%: -${R(preco*mp.anuncio/100)}`);
+    if(mp.imposto>0)chips.push(`Imposto ${mp.imposto}%: -${R(preco*mp.imposto/100)}`);
+    if(mp.taxa_fixa>0)chips.push(`Taxa fixa: -${R(mp.taxa_fixa)}`);
+    const liqColor=lucro_liq>=0?'var(--green)':'var(--red)';
+    const liqBg=lucro_liq>=0?'var(--green-s)':'var(--red-s)';
+    return`<div class="mp-result">
+      <div class="mp-result-hdr">
+        <div><div class="mp-name">${esc(mp.nome)}</div><div class="mp-fees-info">${(soma*100).toFixed(0)}% em taxas${mp.taxa_fixa>0?` + taxa fixa ${R(mp.taxa_fixa)}`:''}</div></div>
+        <div><div class="mp-price-lbl">Preço sugerido</div><div class="mp-price">${R(preco)}</div></div>
+      </div>
+      <div class="mp-fee-row">${chips.map(f=>`<span class="mp-chip">${f}</span>`).join('')}</div>
+      <div class="mp-profits">
+        <div class="mp-profit bruto"><div class="pp-l">Lucro Bruto</div><div class="pp-v">${R(lucro_bruto)}</div></div>
+        <div class="mp-profit liquido" style="background:${liqBg}"><div class="pp-l">Lucro Líquido</div><div class="pp-v" style="color:${liqColor}">${R(lucro_liq)}</div></div>
+        <div class="mp-profit margem"><div class="pp-l">Margem</div><div class="pp-v">${margem.toFixed(1)}%</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ==================== EMB ROWS ====================
+function renderEmbRows(){
+  document.getElementById('emb-rows').innerHTML=D.embItems.map((item,i)=>`
+    <div class="emb-row">
+      <input type="text" value="${esc(item.nome)}" placeholder="Item..." oninput="D.embItems[${i}].nome=this.value;calcular()">
+      <input type="number" value="${item.qty||1}" step="1" min="0" oninput="D.embItems[${i}].qty=parseFloat(this.value)||0;calcular();document.getElementById('es${i}').textContent=R((D.embItems[${i}].qty||0)*(D.embItems[${i}].custo_un||0))">
+      <input type="number" value="${item.custo_un||0}" step="0.01" min="0" oninput="D.embItems[${i}].custo_un=parseFloat(this.value)||0;calcular();document.getElementById('es${i}').textContent=R((D.embItems[${i}].qty||0)*(D.embItems[${i}].custo_un||0))">
+      <span class="emb-sub" id="es${i}">${R((item.qty||0)*(item.custo_un||0))}</span>
+      <button class="btn btn-danger btn-xs" onclick="D.embItems.splice(${i},1);renderEmbRows();calcular();">✕</button>
+    </div>`).join('');
+}
+function addEmbRow(){D.embItems.push({nome:'',qty:1,custo_un:0});renderEmbRows();}
+
+// ==================== PRODUCT ====================
+function getFormData(){
+  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId}=calcInputs();
+  const mat=D.materiais.find(m=>m.id===matId);
+  const imp=D.impressoras.find(p=>p.id===impId);
+  const kwh=D.custos.kwh||0.84;
+  const c_mat=mat?(peso/1000)*mat.preco_kg:0;
+  const c_ener=imp?(imp.potencia/1000)*tempo*kwh:0;
+  const c_amort=imp&&imp.vida_util>0?(imp.valor/imp.vida_util)*tempo:0;
+  const emb=calcEmbTotal();const c_emb=emb/qtd;
+  const fixo_total=D.custos.items.reduce((s,i)=>s+(i.valor||0),0);
+  const fixo_liq=Math.max(0,fixo_total-(D.custos.solar||0));
+  const c_fixo=fixo_liq/unidades;
+  const sub=c_mat+c_ener+c_amort+c_emb+c_fixo;
+  const custo_un=sub+sub*(falhas/100);
+  const preco_base=custo_un*markup;
+  const mp_prices={};
+  D.marketplaces.filter(m=>m.ativo).forEach(mp=>{
+    const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+    mp_prices[mp.nome]=soma<1?(preco_base+mp.taxa_fixa)/(1-soma):preco_base+mp.taxa_fixa;
+  });
+  return{
+    nome:document.getElementById('c_nome').value.trim(),
+    stl:document.getElementById('c_stl').value.trim(),
+    image:currentImage,
+    materialId:matId,materialNome:mat?mat.nome:'—',
+    impressoraId:impId,impressoraNome:imp?imp.nome:'—',
+    tempo,peso,qtd,falhas,markup,unidades_mes:unidades,
+    embalagens:JSON.parse(JSON.stringify(D.embItems)),
+    custo_un,preco_base,mp_prices,
+  };
+}
+
+function saveProduct(){
+  const data=getFormData();
+  if(!data.nome){toast('Informe o nome da peça!','#dc2626');return;}
+  if(editingProduct!==null){
+    const idx=D.catalog.findIndex(p=>p.id===editingProduct);
+    if(idx>=0){
+      // keep existing image if no new one was uploaded
+      if(!data.image&&D.catalog[idx].image)data.image=D.catalog[idx].image;
+      D.catalog[idx]={...D.catalog[idx],...data,updatedAt:new Date().toISOString()};
+    }
+    toast(`${code(editingProduct)} atualizado`,'#16a34a');
+  } else {
+    const id=D.nextId++;
+    D.catalog.push({id,code:code(id),...data,savedAt:new Date().toISOString()});
+    editingProduct=id;
+    toast(`Salvo como ${code(id)}`,'#16a34a');
+  }
+  save();updateProductIndicator();renderCatalog();
+}
+
+function loadProduct(id){
+  const p=D.catalog.find(x=>x.id===id);if(!p)return;
+  editingProduct=p.id;
+  document.getElementById('c_nome').value=p.nome||'';
+  document.getElementById('c_stl').value=p.stl||'';
+  document.getElementById('c_tempo').value=p.tempo||1;
+  document.getElementById('c_peso').value=p.peso||0;
+  document.getElementById('c_qtd').value=p.qtd||1;
+  document.getElementById('c_falhas').value=p.falhas||10;
+  document.getElementById('c_markup').value=p.markup||3;
+  document.getElementById('c_unidades_mes').value=p.unidades_mes||40;
+  D.embItems=JSON.parse(JSON.stringify(p.embalagens||[]));
+  renderEmbRows();updateSelects();
+  setImagePreview(p.image||null);
+  setTimeout(()=>{
+    if(p.materialId)document.getElementById('c_material').value=p.materialId;
+    if(p.impressoraId)document.getElementById('c_impressora').value=p.impressoraId;
+    calcular();updateProductIndicator();
+    hideDD();document.getElementById('search-input').value='';
+    showTab('calcular',document.querySelector('[data-tab=calcular]'));
+    window.scrollTo(0,0);
+  },50);
+}
+
+function clearProduct(){
+  editingProduct=null;
+  ['c_nome','c_stl'].forEach(id=>document.getElementById(id).value='');
+  clearImage();
+  document.getElementById('c_tempo').value=1;
+  document.getElementById('c_peso').value=50;
+  document.getElementById('c_qtd').value=1;
+  document.getElementById('c_falhas').value=10;
+  document.getElementById('c_markup').value=3;
+  D.embItems=[{nome:'Embalagem',qty:1,custo_un:2.50}];
+  renderEmbRows();updateProductIndicator();calcular();
+}
+
+function updateProductIndicator(){
+  const ind=document.getElementById('product-indicator');
+  const codeEl=document.getElementById('pi-code');
+  const nameEl=document.getElementById('pi-name');
+  const hint=document.getElementById('save-hint');
+  if(editingProduct!==null){
+    const p=D.catalog.find(x=>x.id===editingProduct);
+    codeEl.className='pi-code saved-code';
+    codeEl.textContent=p?code(p.id):'—';
+    nameEl.textContent=p?p.nome:'—';
+    hint.textContent='Clique em "Salvar no Catálogo" para atualizar esta peça.';
+  } else {
+    codeEl.className='pi-code new-code';
+    codeEl.textContent='NOVA PEÇA';
+    nameEl.textContent='Preencha os dados e salve no catálogo';
+    hint.textContent='Ao salvar, a peça recebe um código permanente (P001, P002…)';
+  }
+}
+
+// ==================== CATALOG ====================
+function renderCatalog(){
+  const q=(document.getElementById('cat-search')?.value||'').toLowerCase();
+  const list=D.catalog.filter(p=>!q||p.code.toLowerCase().includes(q)||p.nome.toLowerCase().includes(q));
+  set('cat-total',D.catalog.length);
+  if(D.catalog.length){
+    const ac=D.catalog.reduce((s,p)=>s+p.custo_un,0)/D.catalog.length;
+    const ap=D.catalog.reduce((s,p)=>s+p.preco_base,0)/D.catalog.length;
+    set('cat-avg-c',R(ac));set('cat-avg-p',R(ap));
+  } else {set('cat-avg-c','—');set('cat-avg-p','—');}
+  const tbody=document.getElementById('cat-body');
+  if(!list.length){
+    tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:26px;">${D.catalog.length?'Nenhuma peça encontrada.':'Nenhuma peça salva ainda.'}</td></tr>`;
+    return;
+  }
+  const mpNames=[...new Set(D.catalog.flatMap(p=>Object.keys(p.mp_prices||{})))];
+  document.querySelector('#cat-table thead tr').innerHTML=`
+    <th style="text-align:center;width:44px;">Foto</th><th>Código</th><th>Nome</th><th>STL</th><th>Material</th><th>Tempo</th><th>Peso</th>
+    <th>Custo Un.</th><th>Preço Base</th>${mpNames.map(n=>`<th>${esc(n)}</th>`).join('')}
+    <th>Atualizado</th><th style="text-align:center">Ações</th>`;
+  tbody.innerHTML=list.map(p=>`
+    <tr>
+      <td style="text-align:center;padding:5px 6px;">
+        ${p.image
+          ? `<span class="img-trigger" onmouseenter="showImgPopup('${p.image}',this)" onmouseleave="hideImgPopup()" title="Ver foto">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+             </span>`
+          : `<span class="no-img" title="Sem foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 2"/></svg></span>`
+        }
+      </td>
+      <td><span class="badge badge-blue" style="font-family:monospace;font-size:11px;">${p.code}</span></td>
+      <td style="font-weight:600;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(p.nome)}">${esc(p.nome)}</td>
+      <td style="color:var(--t3);font-size:12px;">${esc(p.stl||'—')}</td>
+      <td>${esc(p.materialNome||'—')}</td>
+      <td style="font-variant-numeric:tabular-nums;">${p.tempo}h</td>
+      <td style="font-variant-numeric:tabular-nums;">${p.peso}g</td>
+      <td style="font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;">${R(p.custo_un)}</td>
+      <td style="font-weight:600;font-variant-numeric:tabular-nums;">${R(p.preco_base)}</td>
+      ${mpNames.map(mn=>`<td style="color:var(--green);font-weight:600;font-variant-numeric:tabular-nums;">${p.mp_prices&&p.mp_prices[mn]?R(p.mp_prices[mn]):'—'}</td>`).join('')}
+      <td style="color:var(--t3);font-size:12px;white-space:nowrap;">${fmtDate(p.updatedAt||p.savedAt)}</td>
+      <td style="text-align:center;white-space:nowrap;">
+        <button class="btn btn-outline btn-xs" onclick="loadProduct(${p.id})">Editar</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteProduct(${p.id})" style="margin-left:4px;">Excluir</button>
+      </td>
+    </tr>`).join('');
+}
+
+function deleteProduct(id){
+  const p=D.catalog.find(x=>x.id===id);if(!p)return;
+  if(!confirm(`Excluir "${p.nome}" (${p.code})?\n\nO código ${p.code} não será reutilizado.`))return;
+  D.catalog=D.catalog.filter(x=>x.id!==id);
+  if(editingProduct===id){editingProduct=null;updateProductIndicator();}
+  save();renderCatalog();
+  toast(`${p.code} excluído`,'#475569');
+}
+
+// ==================== SEARCH ====================
+function onSearchInput(){
+  const q=document.getElementById('search-input').value.toLowerCase().trim();
+  if(!q){hideDD();return;}
+  const matches=D.catalog.filter(p=>p.code.toLowerCase().includes(q)||p.nome.toLowerCase().includes(q)).slice(0,8);
+  const dd=document.getElementById('search-dd');
+  if(!matches.length){dd.style.display='none';return;}
+  dd.innerHTML=matches.map(p=>`
+    <div class="sd-item" onclick="loadProduct(${p.id})">
+      <span class="si-code">${p.code}</span>${esc(p.nome)}
+      <div class="si-sub">${esc(p.materialNome||'')} · ${p.tempo}h · ${p.peso}g · Custo: ${R(p.custo_un)}</div>
+    </div>`).join('');
+  dd.style.display='block';
+}
+function onSearchFocus(){onSearchInput();}
+function hideDD(){document.getElementById('search-dd').style.display='none';}
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))hideDD();});
+
+// ==================== SELECTS ====================
+function updateSelects(){
+  const ms=document.getElementById('c_material');
+  const is=document.getElementById('c_impressora');
+  if(!ms||!is)return;
+  const cm=ms.value,ci=is.value;
+  ms.innerHTML='<option value="">Selecionar material...</option>'+
+    D.materiais.map(m=>`<option value="${m.id}"${String(m.id)===cm?' selected':''}>${esc(m.nome)} — R$ ${m.preco_kg}/kg</option>`).join('');
+  is.innerHTML='<option value="">Selecionar impressora...</option>'+
+    D.impressoras.map(p=>`<option value="${p.id}"${String(p.id)===ci?' selected':''}>${esc(p.nome)} (${p.potencia}W)</option>`).join('');
+  if(!ms.value&&D.materiais.length)ms.value=D.materiais[0].id;
+  if(!is.value&&D.impressoras.length)is.value=D.impressoras[0].id;
+}
+
+// ==================== CUSTOS ====================
+function renderCostRows(){
+  document.getElementById('cost-rows').innerHTML=D.custos.items.map((item,i)=>`
+    <div class="cost-row">
+      <input type="text" value="${esc(item.nome)}" placeholder="Nome da despesa..." oninput="D.custos.items[${i}].nome=this.value;saveCustos()">
+      <div style="display:flex;align-items:center;gap:5px;">
+        <span style="color:var(--t3);font-size:13px;">R$</span>
+        <input type="number" value="${item.valor||0}" step="0.01" min="0" style="flex:1;" oninput="D.custos.items[${i}].valor=parseFloat(this.value)||0;saveCustos()">
+      </div>
+      <button class="btn btn-danger btn-xs" onclick="D.custos.items.splice(${i},1);renderCostRows();saveCustos();">✕</button>
+    </div>`).join('');
+}
+function addCostRow(){D.custos.items.push({id:Date.now(),nome:'',valor:0});renderCostRows();saveCustos();}
+function saveCustos(){
+  D.custos.kwh=parseFloat(document.getElementById('cf_kwh')?.value)||0.84;
+  D.custos.faturamento=parseFloat(document.getElementById('cf_faturamento')?.value)||4000;
+  D.custos.solar=parseFloat(document.getElementById('cf_solar')?.value)||0;
+  save();calcular();
+}
+function updateCustosSummary(total,solar,liq,por_un,unidades){
+  if(total===undefined){
+    total=D.custos.items.reduce((s,i)=>s+(i.valor||0),0);
+    solar=D.custos.solar||0;liq=Math.max(0,total-solar);
+    unidades=n('c_unidades_mes')||40;por_un=liq/unidades;
+  }
+  set('cf_total_d',R(total));set('cf_solar_d','- '+R(solar));set('cf_liq_d',R(liq));
+  set('cf_por_un',R(por_un));set('cf_unid_ref',unidades||40);
+  const fat=D.custos.faturamento||4000;
+  set('cf_diss','Dissolução: '+(fat>0?((liq/fat)*100).toFixed(2):'0.00')+'% do faturamento');
+}
+
+// ==================== MATERIAIS ====================
+function renderMateriais(){
+  document.getElementById('mat-body').innerHTML=D.materiais.map((m,i)=>`
+    <tr>
+      <td><input type="text" value="${esc(m.nome)}" oninput="D.materiais[${i}].nome=this.value;save();updateSelects()"></td>
+      <td><select onchange="D.materiais[${i}].tipo=this.value;save()">
+        <option${m.tipo==='Filamento'?' selected':''}>Filamento</option>
+        <option${m.tipo==='Resina'?' selected':''}>Resina</option>
+        <option${m.tipo==='Outro'?' selected':''}>Outro</option>
+      </select></td>
+      <td><input type="number" value="${m.preco_kg||0}" step="0.01" min="0" oninput="D.materiais[${i}].preco_kg=parseFloat(this.value)||0;save();calcular()"></td>
+      <td><input type="number" value="${m.estoque||0}" step="0.1" min="0" oninput="D.materiais[${i}].estoque=parseFloat(this.value)||0;save()"></td>
+      <td><input type="text" value="${esc(m.obs||'')}" placeholder="—" oninput="D.materiais[${i}].obs=this.value;save()"></td>
+      <td><button class="btn btn-danger btn-xs" onclick="D.materiais.splice(${i},1);renderMateriais();updateSelects();save();">Remover</button></td>
+    </tr>`).join('');
+}
+function addMaterial(){
+  const id=(D.materiais.reduce((mx,m)=>Math.max(mx,m.id||0),0))+1;
+  D.materiais.push({id,nome:'Novo Material',tipo:'Filamento',preco_kg:0,estoque:0,obs:''});
+  renderMateriais();updateSelects();save();
+}
+
+// ==================== IMPRESSORAS ====================
+function renderImpressoras(){
+  document.getElementById('imp-body').innerHTML=D.impressoras.map((p,i)=>{
+    const amort=p.vida_util>0?(p.valor/p.vida_util):0;
+    return`<tr>
+      <td><input type="text" value="${esc(p.nome)}" oninput="D.impressoras[${i}].nome=this.value;save();updateSelects()"></td>
+      <td><input type="number" value="${p.potencia||0}" step="10" min="0" oninput="D.impressoras[${i}].potencia=parseFloat(this.value)||0;save();calcular()"></td>
+      <td><input type="number" value="${p.valor||0}" step="100" min="0" oninput="D.impressoras[${i}].valor=parseFloat(this.value)||0;save();renderImpressoras();calcular()"></td>
+      <td><input type="number" value="${p.vida_util||0}" step="100" min="0" oninput="D.impressoras[${i}].vida_util=parseFloat(this.value)||0;save();renderImpressoras();calcular()"></td>
+      <td style="color:var(--blue);font-weight:700;font-variant-numeric:tabular-nums;">${R(amort)}/h</td>
+      <td><button class="btn btn-danger btn-xs" onclick="D.impressoras.splice(${i},1);renderImpressoras();updateSelects();save();">Remover</button></td>
+    </tr>`;}).join('');
+}
+function addImpressora(){
+  const id=(D.impressoras.reduce((mx,p)=>Math.max(mx,p.id||0),0))+1;
+  D.impressoras.push({id,nome:'Nova Impressora',potencia:350,valor:0,vida_util:5000});
+  renderImpressoras();updateSelects();save();
+}
+
+// ==================== MARKETPLACES ====================
+function renderMarketplaces(){
+  document.getElementById('mp-body').innerHTML=D.marketplaces.map((mp,i)=>`
+    <tr>
+      <td><input type="text" value="${esc(mp.nome)}" oninput="D.marketplaces[${i}].nome=this.value;save();calcular()"></td>
+      <td><input type="number" value="${mp.comissao||0}" step="0.1" min="0" max="100" oninput="D.marketplaces[${i}].comissao=parseFloat(this.value)||0;save();calcular()"></td>
+      <td><input type="number" value="${mp.cartao||0}" step="0.1" min="0" max="100" oninput="D.marketplaces[${i}].cartao=parseFloat(this.value)||0;save();calcular()"></td>
+      <td><input type="number" value="${mp.anuncio||0}" step="0.1" min="0" max="100" oninput="D.marketplaces[${i}].anuncio=parseFloat(this.value)||0;save();calcular()"></td>
+      <td><input type="number" value="${mp.imposto||0}" step="0.1" min="0" max="100" oninput="D.marketplaces[${i}].imposto=parseFloat(this.value)||0;save();calcular()"></td>
+      <td><input type="number" value="${mp.taxa_fixa||0}" step="0.01" min="0" oninput="D.marketplaces[${i}].taxa_fixa=parseFloat(this.value)||0;save();calcular()"></td>
+      <td style="text-align:center;"><input type="checkbox" ${mp.ativo?'checked':''} onchange="D.marketplaces[${i}].ativo=this.checked;save();calcular()"></td>
+      <td><button class="btn btn-danger btn-xs" onclick="D.marketplaces.splice(${i},1);renderMarketplaces();save();calcular();">Remover</button></td>
+    </tr>`).join('');
+}
+function addMarketplace(){
+  const id=(D.marketplaces.reduce((mx,m)=>Math.max(mx,m.id||0),0))+1;
+  D.marketplaces.push({id,nome:'Novo Canal',comissao:0,cartao:0,anuncio:0,imposto:0,taxa_fixa:0,ativo:true});
+  renderMarketplaces();save();
+}
+
+// ==================== REALTIME ====================
+function setupRealtime() {
+  sb.channel('db-app-data')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_data' }, (payload) => {
+      if (payload.new.updated_by === SESSION_ID) return; // ignora as próprias mudanças
+      D = { ...D, ...payload.new.data };
+      localStorage.setItem(SK, JSON.stringify(D));
+      renderAll();
+      toast('Dados atualizados pela sua sócia', '#2563eb');
+    })
+    .subscribe();
+}
+
+// ==================== PRESENCE ====================
+let presenceChannel = null;
+
+function setupPresence() {
+  presenceChannel = sb.channel('presence-room', { config: { presence: { key: SESSION_ID } } });
+  presenceChannel
+    .on('presence', { event: 'sync' }, () => {
+      const state = presenceChannel.presenceState();
+      const others = Object.values(state)
+        .flat()
+        .filter(u => u.session !== SESSION_ID)
+        .map(u => u.user);
+      updatePresenceUI(others);
+    })
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await presenceChannel.track({ user: userName, session: SESSION_ID });
+      }
+    });
+}
+
+function updatePresenceUI(others) {
+  const el = document.getElementById('presence-indicator');
+  if (!el) return;
+  if (others.length === 0) {
+    el.style.display = 'none';
+  } else {
+    el.style.display = 'flex';
+    el.querySelector('span:last-child').textContent = others.join(', ') + ' online';
+  }
+}
+
+// ==================== INIT ====================
+async function init(){
+  loadTheme();
+
+  // Pede nome na primeira vez (fica salvo localmente, não no banco)
+  if(!userName){
+    userName = window.prompt('Como você quer ser identificada?\n(Aparece para sua sócia quando você estiver online)') || 'Usuária';
+    localStorage.setItem(USER_KEY, userName);
+  }
+
+  await load(); // aguarda carregar do Supabase antes de renderizar
+
+  if(D.custos){
+    document.getElementById('cf_kwh').value=D.custos.kwh||0.84;
+    document.getElementById('cf_faturamento').value=D.custos.faturamento||4000;
+    document.getElementById('cf_solar').value=D.custos.solar||0;
+  }
+  renderEmbRows();renderCostRows();renderMateriais();renderImpressoras();renderMarketplaces();
+  updateSelects();updateProductIndicator();updateCustosSummary();calcular();
+
+  setupRealtime();   // sincronização em tempo real
+  setupPresence();   // indicador de quem está online
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
