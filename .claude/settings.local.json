@@ -4,7 +4,15 @@
       "Bash(findstr /n \"handleImageUpload\\\\|showImgPopup\\\\|hideImgPopup\\\\|currentImage\\\\|img-trigger\\\\|img-thumb\\\\|clearImage\\\\|setImagePreview\" \"c:\\\\3D-IMPRESSAO\\\\index.html\")",
       "mcp__claude_ai_Supabase__apply_migration",
       "mcp__claude_ai_Supabase__list_projects",
-      "mcp__claude_ai_Supabase__execute_sql"
+      "mcp__claude_ai_Supabase__execute_sql",
+      "Bash(git add *)",
+      "Bash(git push *)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(git remote *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://3dpreco.vercel.app)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
