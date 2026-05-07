@@ -576,6 +576,25 @@ select{cursor:pointer;}
 </main>
 </div>
 
+<!-- USERNAME MODAL -->
+<div class="modal-overlay" id="username-modal" style="background:rgba(0,0,0,.6);backdrop-filter:blur(4px);">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <div style="padding:32px 28px 24px;">
+      <div style="width:52px;height:52px;background:var(--blue);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      </div>
+      <div style="font-size:18px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px;">Bem-vinda ao 3D Print</div>
+      <div style="font-size:13px;color:var(--t2);margin-bottom:24px;line-height:1.5;">Como você quer ser identificada?<br>Seu nome aparece para sua sócia quando você estiver online.</div>
+      <input type="text" id="username-input" placeholder="Ex: Ana, Maria..." maxlength="30"
+        style="text-align:center;font-size:15px;padding:10px 14px;margin-bottom:16px;"
+        onkeydown="if(event.key==='Enter')confirmUsername()">
+      <button class="btn btn-primary" onclick="confirmUsername()" style="width:100%;padding:11px;font-size:14px;font-weight:600;justify-content:center;">
+        Entrar
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- BACKUP MODAL -->
 <div class="modal-overlay hidden" id="bk-modal" onclick="if(event.target===this)closeBkModal()">
   <div class="modal">
@@ -1323,14 +1342,35 @@ function updatePresenceUI(others) {
   }
 }
 
+// ==================== USERNAME MODAL ====================
+function askUserName(){
+  return new Promise(resolve => {
+    document.getElementById('username-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('username-input').focus(), 50);
+    window._resolveUserName = resolve;
+  });
+}
+
+function confirmUsername(){
+  const val = document.getElementById('username-input').value.trim();
+  if(!val) return;
+  document.getElementById('username-modal').classList.add('hidden');
+  if(window._resolveUserName){
+    window._resolveUserName(val);
+    window._resolveUserName = null;
+  }
+}
+
 // ==================== INIT ====================
 async function init(){
   loadTheme();
 
-  // Pede nome na primeira vez (fica salvo localmente, não no banco)
+  // Pede nome na primeira vez via modal bonito
   if(!userName){
-    userName = window.prompt('Como você quer ser identificada?\n(Aparece para sua sócia quando você estiver online)') || 'Usuária';
+    userName = await askUserName();
     localStorage.setItem(USER_KEY, userName);
+  } else {
+    document.getElementById('username-modal').classList.add('hidden');
   }
 
   await load(); // aguarda carregar do Supabase antes de renderizar
