@@ -159,7 +159,10 @@ select{cursor:pointer;}
 .emb-cat-badge{font-size:12px;font-weight:600;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap;padding:5px 2px;}
 .emb-sub{font-size:12px;color:var(--t2);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;width:80px;text-align:right;padding:5px 2px;}
 /* EMB CATALOG TABLE */
-.emb-cat-hdr,.emb-cat-row{display:grid;grid-template-columns:2fr 1.4fr 90px 60px 75px 85px 30px;gap:6px;align-items:center;}
+.emb-cat-hdr,.emb-cat-row{display:grid;grid-template-columns:1.8fr 1fr 85px 52px 68px 80px 155px 28px;gap:6px;align-items:center;}
+.emb-cat-dim{display:flex;gap:3px;align-items:center;}
+.emb-cat-dim input{width:38px!important;text-align:center;padding:5px 3px!important;}
+.emb-cat-dim span{color:var(--t3);font-size:11px;}
 .emb-cat-hdr{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:8px;}
 .emb-cat-row{margin-bottom:6px;}
 .emb-cat-row input{padding:5px 7px;font-size:13px;}
@@ -395,7 +398,20 @@ select{cursor:pointer;}
           </button>
         </div>
         <div id="emb-rows"></div>
-        <div style="text-align:right;font-size:12px;color:var(--t2);padding-top:6px;border-top:1px solid var(--border);">
+        <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;">
+          <div style="font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:8px;">Recomendar caixa por dimensões</div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:12px;color:var(--t2);">Peça (cm):</span>
+            <input type="number" id="dim_l" placeholder="Comp" step="0.5" min="0" style="width:60px;text-align:center;" oninput="recEmb()">
+            <span style="color:var(--t3);font-size:13px;">×</span>
+            <input type="number" id="dim_w" placeholder="Larg" step="0.5" min="0" style="width:60px;text-align:center;" oninput="recEmb()">
+            <span style="color:var(--t3);font-size:13px;">×</span>
+            <input type="number" id="dim_h" placeholder="Alt" step="0.5" min="0" style="width:60px;text-align:center;" oninput="recEmb()">
+            <span style="font-size:11px;color:var(--t3);">+ 2cm/lado</span>
+          </div>
+          <div id="emb-rec" style="margin-top:8px;"></div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:var(--t2);padding-top:6px;border-top:1px solid var(--border);margin-top:10px;">
           Total: <strong id="emb-total" style="font-variant-numeric:tabular-nums;">R$ 0,00</strong>
         </div>
       </div>
@@ -582,7 +598,7 @@ select{cursor:pointer;}
     </div>
     <div style="overflow-x:auto;padding:14px 16px;">
       <div class="emb-cat-hdr">
-        <span>Nome</span><span>Tamanho / Obs.</span><span>Valor Compra (R$)</span><span>Qtd.</span><span>Frete (R$)</span><span>Custo Un. (auto)</span><span></span>
+        <span>Nome</span><span>Obs. / Tamanho</span><span>Valor Compra (R$)</span><span>Qtd.</span><span>Frete (R$)</span><span>Custo Un. (auto)</span><span>Dim. int. L×W×H (cm)</span><span></span>
       </div>
       <div id="emb-cat-rows"></div>
       <div id="emb-cat-empty" style="text-align:center;color:var(--t3);padding:20px;font-size:13px;">Nenhum item cadastrado ainda.</div>
@@ -1058,6 +1074,13 @@ function renderEmbCatalog(){
       <input type="number" value="${c.qty_compra||1}" step="1" min="1" oninput="D.embalagens_catalog[${i}].qty_compra=parseFloat(this.value)||1;upEmbCatRow(${i})">
       <input type="number" value="${c.frete||0}" step="0.01" min="0" oninput="D.embalagens_catalog[${i}].frete=parseFloat(this.value)||0;upEmbCatRow(${i})">
       <span class="emb-cat-auto" id="ecc${i}">${R(embCusto(c))}</span>
+      <div class="emb-cat-dim">
+        <input type="number" value="${c.dim_l||''}" placeholder="L" step="0.5" min="0" oninput="D.embalagens_catalog[${i}].dim_l=parseFloat(this.value)||0;save()">
+        <span>×</span>
+        <input type="number" value="${c.dim_w||''}" placeholder="W" step="0.5" min="0" oninput="D.embalagens_catalog[${i}].dim_w=parseFloat(this.value)||0;save()">
+        <span>×</span>
+        <input type="number" value="${c.dim_h||''}" placeholder="H" step="0.5" min="0" oninput="D.embalagens_catalog[${i}].dim_h=parseFloat(this.value)||0;save()">
+      </div>
       <button class="btn btn-danger btn-xs" onclick="D.embalagens_catalog.splice(${i},1);save();renderEmbCatalog();renderEmbRows();">✕</button>
     </div>`).join('');
 }
@@ -1075,7 +1098,7 @@ function upEmbCatRow(i){
 function addEmbCatalogRow(){
   if(!D.embalagens_catalog)D.embalagens_catalog=[];
   D.nextEmbCatId=(D.nextEmbCatId||0)+1;
-  D.embalagens_catalog.push({id:D.nextEmbCatId,nome:'',tamanho:'',valor_compra:0,qty_compra:1,frete:0});
+  D.embalagens_catalog.push({id:D.nextEmbCatId,nome:'',tamanho:'',valor_compra:0,qty_compra:1,frete:0,dim_l:0,dim_w:0,dim_h:0});
   renderEmbCatalog();
 }
 
@@ -1142,6 +1165,48 @@ function onEmbSelect(i,val){
 function addEmbRow(){
   D.embItems.push({catalog_id:null,nome:'',qty:1,custo_un:0});
   renderEmbRows();
+}
+
+// ==================== EMB RECOMMENDATION ====================
+function boxFits(c, rl, rw, rh){
+  if(!c.dim_l||!c.dim_w||!c.dim_h) return false;
+  const box=[c.dim_l,c.dim_w,c.dim_h].sort((a,b)=>a-b);
+  const req=[rl,rw,rh].sort((a,b)=>a-b);
+  return box[0]>=req[0]&&box[1]>=req[1]&&box[2]>=req[2];
+}
+
+function recEmb(){
+  const l=parseFloat(document.getElementById('dim_l').value)||0;
+  const w=parseFloat(document.getElementById('dim_w').value)||0;
+  const h=parseFloat(document.getElementById('dim_h').value)||0;
+  const el=document.getElementById('emb-rec');
+  if(!el)return;
+  if(!l||!w||!h){el.innerHTML='';return;}
+  const ml=l+4,mw=w+4,mh=h+4;
+  const boxes=(D.embalagens_catalog||[])
+    .filter(c=>boxFits(c,ml,mw,mh))
+    .sort((a,b)=>(a.dim_l*a.dim_w*a.dim_h)-(b.dim_l*b.dim_w*b.dim_h));
+  if(!boxes.length){
+    el.innerHTML=`<div style="font-size:12px;color:var(--t3);padding:6px 0;">Nenhuma caixa cadastrada com dimensões suficientes para ${ml}×${mw}×${mh}cm. Cadastre caixas com dimensões na aba Embalagens.</div>`;
+    return;
+  }
+  const b=boxes[0];
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;background:var(--bg2);border:1.5px solid var(--blue);border-radius:8px;padding:8px 12px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:13px;font-weight:700;">${esc(b.nome)}</div>
+      <div style="font-size:11px;color:var(--t2);">${b.dim_l}×${b.dim_w}×${b.dim_h}cm · ${R(embCusto(b))} un.</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="applyEmbRec(${b.id})">Usar esta</button>
+  </div>`;
+}
+
+function applyEmbRec(catalogId){
+  const c=(D.embalagens_catalog||[]).find(x=>x.id==catalogId);
+  if(!c)return;
+  const exists=D.embItems.find(x=>x.catalog_id==catalogId);
+  if(!exists) D.embItems.push({catalog_id:c.id,nome:c.nome,qty:1,custo_un:embCusto(c)});
+  renderEmbRows();calcular();
 }
 
 // ==================== PRODUCT ====================
