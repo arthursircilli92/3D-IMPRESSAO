@@ -358,7 +358,15 @@ select{cursor:pointer;}
             </div>
           </div>
           <div class="field"><label>Impressora</label><select id="c_impressora" onchange="calcular()"><option value="">Selecionar...</option></select></div>
-          <div class="field"><label>Tempo de Impressão (h)</label><input type="number" id="c_tempo" step="0.1" min="0" value="1" oninput="calcular()"></div>
+          <div class="field">
+            <label>Tempo de Impressão</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="c_tempo_h" step="1" min="0" value="1" oninput="calcular()" style="width:70px;text-align:center;">
+              <span style="color:var(--t2);font-size:13px;white-space:nowrap;">h</span>
+              <input type="number" id="c_tempo_m" step="1" min="0" max="59" value="0" oninput="calcular()" style="width:70px;text-align:center;">
+              <span style="color:var(--t2);font-size:13px;white-space:nowrap;">min</span>
+            </div>
+          </div>
           <div class="field"><label>Peso de Filamento (g)</label><input type="number" id="c_peso" step="1" min="0" value="50" oninput="calcular()"></div>
           <div class="field"><label>Material</label><select id="c_material" onchange="calcular()"><option value="">Selecionar...</option></select></div>
           <div class="field"><label>Quantidade na Mesa</label><input type="number" id="c_qtd" step="1" min="1" value="1" oninput="calcular()"></div>
@@ -916,6 +924,7 @@ function showTab(tab,el){
 function R(v){return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function n(id){return parseFloat(document.getElementById(id)?.value)||0;}
 function fmtDate(iso){return iso?new Date(iso).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'-';}
+function fmtTempo(h){const hh=Math.floor(h||0);const mm=Math.round(((h||0)-hh)*60);return mm>0?`${hh}h ${mm}min`:`${hh}h`;}
 function code(id){return 'P'+String(id).padStart(3,'0');}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
@@ -923,7 +932,7 @@ function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 // ==================== CALCULATOR ====================
 function calcInputs(){
   return{
-    tempo:n('c_tempo'),peso:n('c_peso'),qtd:Math.max(1,n('c_qtd')),
+    tempo:n('c_tempo_h')+(n('c_tempo_m')/60),peso:n('c_peso'),qtd:Math.max(1,n('c_qtd')),
     falhas:n('c_falhas'),markup:Math.max(1,n('c_markup')),unidades:Math.max(1,n('c_unidades_mes')),
     matId:parseInt(document.getElementById('c_material')?.value)||null,
     impId:parseInt(document.getElementById('c_impressora')?.value)||null,
@@ -1066,7 +1075,9 @@ function loadProduct(id){
   editingProduct=p.id;
   document.getElementById('c_nome').value=p.nome||'';
   document.getElementById('c_stl').value=p.stl||'';
-  document.getElementById('c_tempo').value=p.tempo||1;
+  const _th=Math.floor(p.tempo||1);const _tm=Math.round(((p.tempo||1)-_th)*60);
+  document.getElementById('c_tempo_h').value=_th;
+  document.getElementById('c_tempo_m').value=_tm;
   document.getElementById('c_peso').value=p.peso||0;
   document.getElementById('c_qtd').value=p.qtd||1;
   document.getElementById('c_falhas').value=p.falhas||10;
@@ -1089,7 +1100,8 @@ function clearProduct(){
   editingProduct=null;
   ['c_nome','c_stl'].forEach(id=>document.getElementById(id).value='');
   clearImage();
-  document.getElementById('c_tempo').value=1;
+  document.getElementById('c_tempo_h').value=1;
+  document.getElementById('c_tempo_m').value=0;
   document.getElementById('c_peso').value=50;
   document.getElementById('c_qtd').value=1;
   document.getElementById('c_falhas').value=10;
@@ -1151,7 +1163,7 @@ function renderCatalog(){
       <td style="font-weight:600;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(p.nome)}">${esc(p.nome)}</td>
       <td style="color:var(--t3);font-size:12px;">${esc(p.stl||'—')}</td>
       <td>${esc(p.materialNome||'—')}</td>
-      <td style="font-variant-numeric:tabular-nums;">${p.tempo}h</td>
+      <td style="font-variant-numeric:tabular-nums;">${fmtTempo(p.tempo)}</td>
       <td style="font-variant-numeric:tabular-nums;">${p.peso}g</td>
       <td style="font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;">${R(p.custo_un)}</td>
       <td style="font-weight:600;font-variant-numeric:tabular-nums;">${R(p.preco_base)}</td>
@@ -1183,7 +1195,7 @@ function onSearchInput(){
   dd.innerHTML=matches.map(p=>`
     <div class="sd-item" onclick="loadProduct(${p.id})">
       <span class="si-code">${p.code}</span>${esc(p.nome)}
-      <div class="si-sub">${esc(p.materialNome||'')} · ${p.tempo}h · ${p.peso}g · Custo: ${R(p.custo_un)}</div>
+      <div class="si-sub">${esc(p.materialNome||'')} · ${fmtTempo(p.tempo)} · ${p.peso}g · Custo: ${R(p.custo_un)}</div>
     </div>`).join('');
   dd.style.display='block';
 }
