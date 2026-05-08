@@ -1088,7 +1088,7 @@ function renderEmbCatalog(){
   document.getElementById('emb-cat-rows').innerHTML=rows.map((c,i)=>{
     const isRolo=c.tipo==='rolo';
     const cu=embCusto(c);
-    const cuLabel=isRolo?R(cu)+'/cm':R(cu)+'/un.';
+    const cuLabel=isRolo?R(cu*100)+'/m':R(cu)+'/un.';
     const qtdCell=isRolo
       ?`<input type="number" value="${c.comprimento_m||''}" placeholder="metros" step="1" min="0" oninput="D.embalagens_catalog[${i}].comprimento_m=parseFloat(this.value)||0;upEmbCatRow(${i})">`
       :`<input type="number" value="${c.qty_compra||1}" step="1" min="1" oninput="D.embalagens_catalog[${i}].qty_compra=parseFloat(this.value)||1;upEmbCatRow(${i})">`;
@@ -1127,7 +1127,7 @@ function upEmbCatRow(i){
   const c=D.embalagens_catalog[i];
   const cu=embCusto(c);
   const el=document.getElementById('ecc'+i);
-  if(el)el.textContent=c.tipo==='rolo'?R(cu)+'/cm':R(cu)+'/un.';
+  if(el)el.textContent=c.tipo==='rolo'?R(cu*100)+'/m':R(cu)+'/un.';
   D.embItems.forEach(item=>{ if(item.catalog_id==c.id){ item.custo_un=cu; } });
   save();renderEmbRows();calcular();
 }
@@ -1246,7 +1246,7 @@ function renderEmbRows(){
   const catalog=D.embalagens_catalog||[];
   const catOpts=catalog.map(c=>{
     const cu=embCusto(c);
-    const ul=c.tipo==='rolo'?R(cu)+'/cm':R(cu)+'/un.';
+    const ul=c.tipo==='rolo'?R(cu*100)+'/m':R(cu)+'/un.';
     return `<option value="${c.id}">${esc(c.nome)} — ${ul}</option>`;
   }).join('');
   document.getElementById('emb-rows').innerHTML=D.embItems.map((item,i)=>{
@@ -1271,10 +1271,10 @@ function renderEmbRows(){
           <input type="number" value="${item.qty||1}" step="${isRolo?1:1}" min="0" oninput="D.embItems[${i}].qty=parseFloat(this.value)||0;calcular();upEmbSub(${i})">
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:80px;">
-          <span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;">Custo${isRolo?' /cm':isCustom?'':' /un.'}</span>
+          <span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;">Custo${isRolo?' /m':isCustom?'':' /un.'}</span>
           ${isCustom
             ?`<input type="number" value="${custo}" step="0.01" min="0" style="width:80px;text-align:right;" oninput="D.embItems[${i}].custo_un=parseFloat(this.value)||0;calcular();upEmbSub(${i})">`
-            :`<span class="emb-cat-badge">${R(custo)}</span>`}
+            :`<span class="emb-cat-badge">${isRolo?R(custo*100):R(custo)}</span>`}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
           <span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;">Total</span>
