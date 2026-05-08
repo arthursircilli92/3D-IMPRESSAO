@@ -149,12 +149,21 @@ select{cursor:pointer;}
 .tbl tbody tr:hover td{background:var(--surface2);}
 .tbl input,.tbl select{padding:4px 7px;font-size:12.5px;}
 
-/* EMB ROWS */
-.emb-hdr,.emb-row{display:grid;grid-template-columns:2fr 58px 95px 82px 28px;gap:5px;align-items:center;}
-.emb-hdr{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);font-weight:600;padding-bottom:5px;border-bottom:1px solid var(--border);margin-bottom:6px;}
-.emb-row{margin-bottom:5px;}
-.emb-row input{padding:5px 7px;font-size:13px;}
-.emb-sub{font-size:12px;color:var(--t2);font-weight:500;font-variant-numeric:tabular-nums;}
+/* EMB ROWS (calculadora) */
+.emb-row{display:flex;gap:6px;align-items:flex-start;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border);}
+.emb-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.emb-row-item{flex:2;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.emb-row-item select,.emb-row-item input{width:100%;font-size:13px;padding:5px 7px;}
+.emb-row-nums{display:flex;gap:6px;align-items:center;}
+.emb-row-nums input{width:58px;padding:5px 7px;font-size:13px;text-align:center;}
+.emb-cat-badge{font-size:12px;font-weight:600;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap;padding:5px 2px;}
+.emb-sub{font-size:12px;color:var(--t2);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;width:80px;text-align:right;padding:5px 2px;}
+/* EMB CATALOG TABLE */
+.emb-cat-hdr,.emb-cat-row{display:grid;grid-template-columns:2fr 1.4fr 90px 60px 75px 85px 30px;gap:6px;align-items:center;}
+.emb-cat-hdr{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:8px;}
+.emb-cat-row{margin-bottom:6px;}
+.emb-cat-row input{padding:5px 7px;font-size:13px;}
+.emb-cat-auto{font-size:13px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;padding:4px 2px;}
 
 /* COST ROWS */
 .cost-row{display:grid;grid-template-columns:2fr 120px 28px;gap:7px;align-items:center;margin-bottom:6px;}
@@ -310,6 +319,10 @@ select{cursor:pointer;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
     <span>Impressoras</span>
   </div>
+  <div class="nav-item" data-tab="embalagens" onclick="showTab('embalagens',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    <span>Embalagens</span>
+  </div>
   <div class="nav-item" data-tab="marketplaces" onclick="showTab('marketplaces',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
     <span>Marketplaces</span>
@@ -381,7 +394,6 @@ select{cursor:pointer;}
             Adicionar
           </button>
         </div>
-        <div class="emb-hdr"><span>Item</span><span>Qtd</span><span>Custo un. (R$)</span><span>Subtotal</span><span></span></div>
         <div id="emb-rows"></div>
         <div style="text-align:right;font-size:12px;color:var(--t2);padding-top:6px;border-top:1px solid var(--border);">
           Total: <strong id="emb-total" style="font-variant-numeric:tabular-nums;">R$ 0,00</strong>
@@ -556,6 +568,32 @@ select{cursor:pointer;}
   </div>
 </div>
 
+<!-- ===== EMBALAGENS ===== -->
+<div class="tab-panel" id="tab-embalagens">
+  <div class="page-title">Embalagens e Materiais de Envio</div>
+  <div class="page-sub">Cadastre cada item com o valor da compra, quantidade e frete. O custo unitário é calculado automaticamente.</div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div class="card-title" style="margin:0;">Itens Cadastrados</div>
+      <button class="btn btn-primary btn-sm" onclick="addEmbCatalogRow()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Item
+      </button>
+    </div>
+    <div style="overflow-x:auto;padding:14px 16px;">
+      <div class="emb-cat-hdr">
+        <span>Nome</span><span>Tamanho / Obs.</span><span>Valor Compra (R$)</span><span>Qtd.</span><span>Frete (R$)</span><span>Custo Un. (auto)</span><span></span>
+      </div>
+      <div id="emb-cat-rows"></div>
+      <div id="emb-cat-empty" style="text-align:center;color:var(--t3);padding:20px;font-size:13px;">Nenhum item cadastrado ainda.</div>
+    </div>
+  </div>
+  <div class="info-box" style="margin-top:12px;">
+    <strong>Custo unitário</strong> = (Valor da compra + Frete) ÷ Quantidade comprada<br>
+    <span style="font-size:12px;opacity:.8;">Os itens aparecem como opções na seção de embalagens de cada peça na calculadora.</span>
+  </div>
+</div>
+
 <!-- ===== MARKETPLACES ===== -->
 <div class="tab-panel" id="tab-marketplaces">
   <div class="page-title">Marketplaces e Canais de Venda</div>
@@ -658,7 +696,9 @@ let D={
     {id:3,nome:'Plataformas e-commerce',valor:60},{id:4,nome:'Taxa MEI',valor:75.90},
     {id:5,nome:'Publicidade fixa',valor:0},{id:6,nome:'Internet',valor:100},
   ],solar:0,kwh:0.84,faturamento:4000},
-  embItems:[{nome:'Embalagem',qty:1,custo_un:2.50}],
+  embItems:[],
+  embalagens_catalog:[],
+  nextEmbCatId:0,
 };
 let editingProduct=null;
 let currentImage=null;
@@ -886,7 +926,7 @@ function renderAll(){
     if(el('cf_solar'))el('cf_solar').value=D.custos.solar||0;
   }
   editingProduct=null;currentImage=null;
-  renderEmbRows();renderCostRows();renderMateriais();renderImpressoras();renderMarketplaces();
+  renderEmbCatalog();renderEmbRows();renderCostRows();renderMateriais();renderImpressoras();renderMarketplaces();
   updateSelects();updateProductIndicator();updateCustosSummary();calcular();
   clearImage();
 }
@@ -1004,18 +1044,105 @@ function renderMpResults(custo_un,preco_base){
   }).join('');
 }
 
-// ==================== EMB ROWS ====================
-function renderEmbRows(){
-  document.getElementById('emb-rows').innerHTML=D.embItems.map((item,i)=>`
-    <div class="emb-row">
-      <input type="text" value="${esc(item.nome)}" placeholder="Item..." oninput="D.embItems[${i}].nome=this.value;calcular()">
-      <input type="number" value="${item.qty||1}" step="1" min="0" oninput="D.embItems[${i}].qty=parseFloat(this.value)||0;calcular();document.getElementById('es${i}').textContent=R((D.embItems[${i}].qty||0)*(D.embItems[${i}].custo_un||0))">
-      <input type="number" value="${item.custo_un||0}" step="0.01" min="0" oninput="D.embItems[${i}].custo_un=parseFloat(this.value)||0;calcular();document.getElementById('es${i}').textContent=R((D.embItems[${i}].qty||0)*(D.embItems[${i}].custo_un||0))">
-      <span class="emb-sub" id="es${i}">${R((item.qty||0)*(item.custo_un||0))}</span>
-      <button class="btn btn-danger btn-xs" onclick="D.embItems.splice(${i},1);renderEmbRows();calcular();">✕</button>
+// ==================== EMBALAGENS CATALOG ====================
+function embCusto(c){ return ((c.valor_compra||0)+(c.frete||0))/Math.max(1,c.qty_compra||1); }
+
+function renderEmbCatalog(){
+  const rows = D.embalagens_catalog||[];
+  document.getElementById('emb-cat-empty').style.display = rows.length?'none':'block';
+  document.getElementById('emb-cat-rows').innerHTML = rows.map((c,i)=>`
+    <div class="emb-cat-row">
+      <input type="text" value="${esc(c.nome||'')}" placeholder="Ex: Caixa P" oninput="D.embalagens_catalog[${i}].nome=this.value;save();renderEmbRows()">
+      <input type="text" value="${esc(c.tamanho||'')}" placeholder="Ex: 15x10x8cm" oninput="D.embalagens_catalog[${i}].tamanho=this.value;save()">
+      <input type="number" value="${c.valor_compra||0}" step="0.01" min="0" oninput="D.embalagens_catalog[${i}].valor_compra=parseFloat(this.value)||0;upEmbCatRow(${i})">
+      <input type="number" value="${c.qty_compra||1}" step="1" min="1" oninput="D.embalagens_catalog[${i}].qty_compra=parseFloat(this.value)||1;upEmbCatRow(${i})">
+      <input type="number" value="${c.frete||0}" step="0.01" min="0" oninput="D.embalagens_catalog[${i}].frete=parseFloat(this.value)||0;upEmbCatRow(${i})">
+      <span class="emb-cat-auto" id="ecc${i}">${R(embCusto(c))}</span>
+      <button class="btn btn-danger btn-xs" onclick="D.embalagens_catalog.splice(${i},1);save();renderEmbCatalog();renderEmbRows();">✕</button>
     </div>`).join('');
 }
-function addEmbRow(){D.embItems.push({nome:'',qty:1,custo_un:0});renderEmbRows();}
+
+function upEmbCatRow(i){
+  const c=D.embalagens_catalog[i];
+  const cu=embCusto(c);
+  const el=document.getElementById('ecc'+i);
+  if(el)el.textContent=R(cu);
+  // propaga custo atualizado para embItems vinculados
+  D.embItems.forEach(item=>{ if(item.catalog_id==c.id){ item.custo_un=cu; } });
+  save();renderEmbRows();calcular();
+}
+
+function addEmbCatalogRow(){
+  if(!D.embalagens_catalog)D.embalagens_catalog=[];
+  D.nextEmbCatId=(D.nextEmbCatId||0)+1;
+  D.embalagens_catalog.push({id:D.nextEmbCatId,nome:'',tamanho:'',valor_compra:0,qty_compra:1,frete:0});
+  renderEmbCatalog();
+}
+
+// ==================== EMB ROWS ====================
+function renderEmbRows(){
+  const catalog=D.embalagens_catalog||[];
+  const catOpts=catalog.map(c=>`<option value="${c.id}">${esc(c.nome)}${c.tamanho?' · '+esc(c.tamanho):''} — ${R(embCusto(c))}</option>`).join('');
+  document.getElementById('emb-rows').innerHTML=D.embItems.map((item,i)=>{
+    const isCustom=!item.catalog_id;
+    const custo=item.custo_un||0;
+    const sub=(item.qty||0)*custo;
+    return `<div class="emb-row">
+      <div class="emb-row-item">
+        <select onchange="onEmbSelect(${i},this.value)">
+          <option value="">— Selecionar —</option>
+          ${catOpts}
+          <option value="__custom__"${isCustom?' selected':''}>Personalizado (digitar)</option>
+        </select>
+        ${isCustom?`<input type="text" value="${esc(item.nome||'')}" placeholder="Nome do item..." oninput="D.embItems[${i}].nome=this.value">`:''}
+      </div>
+      <div class="emb-row-nums">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;">Qtd</span>
+          <input type="number" value="${item.qty||1}" step="1" min="0" oninput="D.embItems[${i}].qty=parseFloat(this.value)||0;calcular();upEmbSub(${i})">
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:80px;">
+          <span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;">Custo un.</span>
+          ${isCustom
+            ?`<input type="number" value="${custo}" step="0.01" min="0" style="width:80px;text-align:right;" oninput="D.embItems[${i}].custo_un=parseFloat(this.value)||0;calcular();upEmbSub(${i})">`
+            :`<span class="emb-cat-badge">${R(custo)}</span>`}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+          <span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;">Total</span>
+          <span class="emb-sub" id="es${i}">${R(sub)}</span>
+        </div>
+      </div>
+      <button class="btn btn-danger btn-xs" style="margin-top:18px;" onclick="D.embItems.splice(${i},1);renderEmbRows();calcular();">✕</button>
+    </div>`;
+  }).join('');
+  // restaura selected dos itens de catálogo
+  D.embItems.forEach((item,i)=>{
+    if(item.catalog_id){
+      const sel=document.getElementById('emb-rows').children[i]?.querySelector('select');
+      if(sel)sel.value=item.catalog_id;
+    }
+  });
+}
+
+function upEmbSub(i){
+  const el=document.getElementById('es'+i);
+  if(el)el.textContent=R((D.embItems[i].qty||0)*(D.embItems[i].custo_un||0));
+}
+
+function onEmbSelect(i,val){
+  if(val===''||val==='__custom__'){
+    D.embItems[i]={catalog_id:null,nome:'',qty:D.embItems[i].qty||1,custo_un:0};
+  } else {
+    const c=(D.embalagens_catalog||[]).find(x=>x.id==val);
+    if(c) D.embItems[i]={catalog_id:c.id,nome:c.nome,qty:D.embItems[i].qty||1,custo_un:embCusto(c)};
+  }
+  renderEmbRows();calcular();
+}
+
+function addEmbRow(){
+  D.embItems.push({catalog_id:null,nome:'',qty:1,custo_un:0});
+  renderEmbRows();
+}
 
 // ==================== PRODUCT ====================
 function getFormData(){
@@ -1106,7 +1233,7 @@ function clearProduct(){
   document.getElementById('c_qtd').value=1;
   document.getElementById('c_falhas').value=10;
   document.getElementById('c_markup').value=3;
-  D.embItems=[{nome:'Embalagem',qty:1,custo_un:2.50}];
+  D.embItems=[];
   renderEmbRows();updateProductIndicator();calcular();
 }
 
@@ -1392,7 +1519,7 @@ async function init(){
     document.getElementById('cf_faturamento').value=D.custos.faturamento||4000;
     document.getElementById('cf_solar').value=D.custos.solar||0;
   }
-  renderEmbRows();renderCostRows();renderMateriais();renderImpressoras();renderMarketplaces();
+  renderEmbCatalog();renderEmbRows();renderCostRows();renderMateriais();renderImpressoras();renderMarketplaces();
   updateSelects();updateProductIndicator();updateCustosSummary();calcular();
 
   setupRealtime();   // sincronização em tempo real
