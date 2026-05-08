@@ -162,14 +162,17 @@ select{cursor:pointer;}
 .emb-cat-badge{font-size:12px;font-weight:600;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap;padding:5px 2px;}
 .emb-sub{font-size:12px;color:var(--t2);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;width:80px;text-align:right;padding:5px 2px;}
 /* EMB CATALOG TABLE */
-.emb-cat-hdr,.emb-cat-row{display:grid;grid-template-columns:1.8fr 1fr 85px 52px 68px 80px 155px 28px;gap:6px;align-items:center;}
+.emb-cat-hdr,.emb-cat-row{display:grid;grid-template-columns:18px 1.8fr 1fr 85px 52px 68px 80px 155px 28px;gap:6px;align-items:center;}
 .emb-cat-dim{display:flex;gap:3px;align-items:center;}
 .emb-cat-dim input{width:38px!important;text-align:center;padding:5px 3px!important;}
 .emb-cat-dim span{color:var(--t3);font-size:11px;}
 .emb-cat-hdr{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:8px;}
-.emb-cat-row{margin-bottom:6px;}
+.emb-cat-row{margin-bottom:6px;border-radius:6px;transition:background .1s;}
+.emb-cat-row.drag-over{background:var(--bg2);outline:1.5px dashed var(--blue);}
 .emb-cat-row input{padding:5px 7px;font-size:13px;}
 .emb-cat-auto{font-size:13px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;padding:4px 2px;}
+.drag-handle{cursor:grab;color:var(--t3);font-size:16px;line-height:1;padding:2px;user-select:none;display:flex;align-items:center;}
+.drag-handle:active{cursor:grabbing;}
 
 /* COST ROWS */
 .cost-row{display:grid;grid-template-columns:2fr 120px 28px;gap:7px;align-items:center;margin-bottom:6px;}
@@ -601,7 +604,7 @@ select{cursor:pointer;}
     </div>
     <div style="overflow-x:auto;padding:14px 16px;">
       <div class="emb-cat-hdr">
-        <span>Nome</span><span>Obs. / Tamanho</span><span>Valor Compra (R$)</span><span>Qtd.</span><span>Frete (R$)</span><span>Custo Un. (auto)</span><span>Dim. int. C×L×A (cm)</span><span></span>
+        <span></span><span>Nome</span><span>Obs. / Tamanho</span><span>Valor Compra (R$)</span><span>Qtd.</span><span>Frete (R$)</span><span>Custo Un. (auto)</span><span>Dim. int. C×L×A (cm)</span><span></span>
       </div>
       <div id="emb-cat-rows"></div>
       <div id="emb-cat-empty" style="text-align:center;color:var(--t3);padding:20px;font-size:13px;">Nenhum item cadastrado ainda.</div>
@@ -1070,7 +1073,14 @@ function renderEmbCatalog(){
   const rows = D.embalagens_catalog||[];
   document.getElementById('emb-cat-empty').style.display = rows.length?'none':'block';
   document.getElementById('emb-cat-rows').innerHTML = rows.map((c,i)=>`
-    <div class="emb-cat-row">
+    <div class="emb-cat-row" draggable="true"
+      ondragstart="embDragStart(${i})"
+      ondragover="embDragOver(event,${i})"
+      ondragleave="embDragLeave(event)"
+      ondrop="embDrop(${i})">
+      <span class="drag-handle" title="Arrastar para reordenar">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
+      </span>
       <input type="text" value="${esc(c.nome||'')}" placeholder="Ex: Caixa P" oninput="D.embalagens_catalog[${i}].nome=this.value;save();renderEmbRows()">
       <input type="text" value="${esc(c.tamanho||'')}" placeholder="Ex: 15x10x8cm" oninput="D.embalagens_catalog[${i}].tamanho=this.value;save()">
       <input type="number" value="${c.valor_compra||0}" step="0.01" min="0" oninput="D.embalagens_catalog[${i}].valor_compra=parseFloat(this.value)||0;upEmbCatRow(${i})">
@@ -1096,6 +1106,19 @@ function upEmbCatRow(i){
   // propaga custo atualizado para embItems vinculados
   D.embItems.forEach(item=>{ if(item.catalog_id==c.id){ item.custo_un=cu; } });
   save();renderEmbRows();calcular();
+}
+
+let _embDragIdx = null;
+function embDragStart(i){ _embDragIdx=i; }
+function embDragOver(e,i){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function embDragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
+function embDrop(i){
+  document.querySelectorAll('.emb-cat-row').forEach(r=>r.classList.remove('drag-over'));
+  if(_embDragIdx===null||_embDragIdx===i){_embDragIdx=null;return;}
+  const item=D.embalagens_catalog.splice(_embDragIdx,1)[0];
+  D.embalagens_catalog.splice(i,0,item);
+  _embDragIdx=null;
+  save();renderEmbCatalog();renderEmbRows();
 }
 
 function addEmbCatalogRow(){
