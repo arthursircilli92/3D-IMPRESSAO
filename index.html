@@ -1078,11 +1078,11 @@ function renderEmbCatalog(){
       <input type="number" value="${c.frete||0}" step="0.01" min="0" oninput="D.embalagens_catalog[${i}].frete=parseFloat(this.value)||0;upEmbCatRow(${i})">
       <span class="emb-cat-auto" id="ecc${i}">${R(embCusto(c))}</span>
       <div class="emb-cat-dim">
-        <input type="number" value="${c.dim_l||''}" placeholder="L" step="0.5" min="0" oninput="D.embalagens_catalog[${i}].dim_l=parseFloat(this.value)||0;save()">
+        <input type="number" value="${c.dim_l||''}" placeholder="Comp" step="0.5" min="0" oninput="D.embalagens_catalog[${i}].dim_l=parseFloat(this.value)||0;save()">
         <span>×</span>
-        <input type="number" value="${c.dim_w||''}" placeholder="W" step="0.5" min="0" oninput="D.embalagens_catalog[${i}].dim_w=parseFloat(this.value)||0;save()">
+        <input type="number" value="${c.dim_w||''}" placeholder="Larg" step="0.5" min="0" oninput="D.embalagens_catalog[${i}].dim_w=parseFloat(this.value)||0;save()">
         <span>×</span>
-        <input type="number" value="${c.dim_h||''}" placeholder="H" step="0.5" min="0" oninput="D.embalagens_catalog[${i}].dim_h=parseFloat(this.value)||0;save()">
+        <input type="number" value="${c.dim_h||''}" placeholder="Alt" step="0.5" min="0" oninput="D.embalagens_catalog[${i}].dim_h=parseFloat(this.value)||0;save()">
       </div>
       <button class="btn btn-danger btn-xs" onclick="D.embalagens_catalog.splice(${i},1);save();renderEmbCatalog();renderEmbRows();">✕</button>
     </div>`).join('');
