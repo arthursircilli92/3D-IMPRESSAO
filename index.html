@@ -85,8 +85,8 @@ input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,9
 input[readonly]{background:var(--surface2);color:var(--t2);cursor:default;}
 input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--blue);}
 input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
-input[type=number]{-moz-appearance:textfield;}
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 select{cursor:pointer;}
 
 /* BUTTONS */
