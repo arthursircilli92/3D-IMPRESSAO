@@ -735,20 +735,31 @@ let editingProduct=null;
 let currentImage=null;
 
 async function load() {
+  let sbData = null;
   try {
-    const { data, error } = await sb.from('app_data').select('data').eq('id','main').maybeSingle();
-    if (data && data.data) {
-      D = { ...D, ...data.data };
-      normalizeCatalog();
-      localStorage.setItem(SK, JSON.stringify(D));
-      return;
-    }
+    const { data } = await sb.from('app_data').select('data').eq('id','main').maybeSingle();
+    if (data && data.data) sbData = data.data;
   } catch(e) { console.warn('Supabase load failed:', e); }
-  // fallback localStorage
+
+  let lsData = null;
   try {
     const s = localStorage.getItem(SK);
-    if (s) { D = { ...D, ...JSON.parse(s) }; normalizeCatalog(); }
+    if (s) lsData = JSON.parse(s);
   } catch(e) {}
+
+  // usa o mais recente entre Supabase e localStorage
+  if (sbData && lsData) {
+    const st = sbData._savedAt || 0;
+    const lt = lsData._savedAt || 0;
+    D = { ...D, ...(lt > st ? lsData : sbData) };
+  } else if (sbData) {
+    D = { ...D, ...sbData };
+  } else if (lsData) {
+    D = { ...D, ...lsData };
+  }
+
+  normalizeCatalog();
+  localStorage.setItem(SK, JSON.stringify(D));
 }
 
 function normalizeCatalog(){
@@ -759,6 +770,7 @@ function normalizeCatalog(){
   });
 }
 function save() {
+  D._savedAt = Date.now();
   try {
     createBackup();
     localStorage.setItem(SK, JSON.stringify(D));
@@ -769,13 +781,20 @@ function save() {
 
 async function pushToSupabase() {
   try {
-    await sb.from('app_data').upsert({
+    const { error } = await sb.from('app_data').upsert({
       id: 'main',
       data: D,
       updated_by: SESSION_ID,
       updated_at: new Date().toISOString()
     });
-  } catch(e) { console.warn('Supabase save failed:', e); }
+    if (error) {
+      console.warn('Supabase save failed:', error);
+      toast('Aviso: sincronização com nuvem falhou. Dados salvos localmente.', '#d97706');
+    }
+  } catch(e) {
+    console.warn('Supabase save failed:', e);
+    toast('Aviso: sincronização com nuvem falhou. Dados salvos localmente.', '#d97706');
+  }
 }
 function toast(msg,bg='#1e293b'){
   const el=document.getElementById('toast');
