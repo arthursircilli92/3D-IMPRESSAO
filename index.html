@@ -739,6 +739,7 @@ async function load() {
     const { data, error } = await sb.from('app_data').select('data').eq('id','main').maybeSingle();
     if (data && data.data) {
       D = { ...D, ...data.data };
+      normalizeCatalog();
       localStorage.setItem(SK, JSON.stringify(D));
       return;
     }
@@ -746,8 +747,16 @@ async function load() {
   // fallback localStorage
   try {
     const s = localStorage.getItem(SK);
-    if (s) D = { ...D, ...JSON.parse(s) };
+    if (s) { D = { ...D, ...JSON.parse(s) }; normalizeCatalog(); }
   } catch(e) {}
+}
+
+function normalizeCatalog(){
+  (D.embalagens_catalog||[]).forEach(c=>{
+    if(!c.tipo) c.tipo='un';
+    if(!c.kit) c.kit=[];
+    if(c.comprimento_m===undefined) c.comprimento_m=0;
+  });
 }
 function save() {
   try {
@@ -1149,6 +1158,7 @@ function addEmbCatalogRow(){
   if(!D.embalagens_catalog)D.embalagens_catalog=[];
   D.nextEmbCatId=(D.nextEmbCatId||0)+1;
   D.embalagens_catalog.push({id:D.nextEmbCatId,nome:'',tipo:'un',valor_compra:0,qty_compra:1,comprimento_m:0,frete:0,dim_l:0,dim_w:0,dim_h:0,kit:[]});
+  save();
   renderEmbCatalog();
 }
 
