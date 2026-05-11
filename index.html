@@ -510,6 +510,10 @@ select{cursor:pointer;}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="cat-search" placeholder="Filtrar por código ou nome..." oninput="renderCatalog()">
     </div>
+    <button class="btn btn-outline btn-sm" onclick="recalcularTudo()" title="Recalcula custo e preço de todas as peças com os custos atuais">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Recalcular Tudo
+    </button>
     <button class="btn btn-primary btn-sm" onclick="showTab('calcular',document.querySelector('[data-tab=calcular]'));clearProduct()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Nova Peça
@@ -1565,7 +1569,14 @@ function renderCatalog(){
       <td style="font-variant-numeric:tabular-nums;">${p.peso}g</td>
       <td style="font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;">${R(p.custo_un)}</td>
       <td style="font-weight:600;font-variant-numeric:tabular-nums;">${R(p.preco_base)}</td>
-      ${mpNames.map(mn=>`<td style="color:var(--green);font-weight:600;font-variant-numeric:tabular-nums;">${p.mp_prices&&p.mp_prices[mn]?R(p.mp_prices[mn]):'—'}</td>`).join('')}
+      ${mpNames.map(mn=>{
+        const preco=p.mp_prices&&p.mp_prices[mn];
+        if(!preco)return`<td style="color:var(--t3);">—</td>`;
+        const mp=D.marketplaces.find(m=>m.nome===mn);
+        let margemHtml='';
+        if(mp){const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;const ll=preco-(preco*soma+mp.taxa_fixa)-p.custo_un;const mg=preco>0?(ll/preco*100):0;const mc=mg>=0?'var(--green)':'var(--red)';margemHtml=`<div style="font-size:11px;color:${mc};font-weight:500;">${mg.toFixed(1)}%</div>`;}
+        return`<td style="color:var(--green);font-weight:600;font-variant-numeric:tabular-nums;">${R(preco)}${margemHtml}</td>`;
+      }).join('')}
       <td style="color:var(--t3);font-size:12px;white-space:nowrap;">${fmtDate(p.updatedAt||p.savedAt)}</td>
       <td style="text-align:center;white-space:nowrap;">
         <button class="btn btn-outline btn-xs" onclick="loadProduct(${p.id})">Editar</button>
@@ -1587,6 +1598,38 @@ function deleteProduct(id){
   if(editingProduct===id){editingProduct=null;updateProductIndicator();}
   save();renderCatalog();
   toast(`${p.code} excluído`,'#475569');
+}
+
+function recalcularTudo(){
+  if(!D.catalog.length){toast('Nenhuma peça no catálogo','#475569');return;}
+  const fixo_total=D.custos.items.reduce((s,i)=>s+(i.valor||0),0);
+  const fixo_liq=Math.max(0,fixo_total-(D.custos.solar||0));
+  const kwh=D.custos.kwh||0.84;
+  D.catalog.forEach(p=>{
+    const mat=D.materiais.find(m=>m.id===p.materialId);
+    const imp=D.impressoras.find(pr=>pr.id===p.impressoraId);
+    const c_mat=mat?(p.peso/1000)*mat.preco_kg:0;
+    const c_ener=imp?(imp.potencia/1000)*p.tempo*kwh:0;
+    const c_amort=imp&&imp.vida_util>0?(imp.valor/imp.vida_util)*p.tempo:0;
+    let c_emb=0;
+    (p.embalagens||[]).forEach(e=>{
+      const ci=(D.embalagens_catalog||[]).find(x=>x.id==e.catalog_id);
+      c_emb+=(e.qty||0)*(ci?embCusto(ci):(e.custo_un||0));
+    });
+    c_emb=c_emb/Math.max(1,p.qtd||1);
+    const c_fixo=fixo_liq/Math.max(1,p.unidades_mes||40);
+    const sub=c_mat+c_ener+c_amort+c_emb+c_fixo;
+    p.custo_un=sub+sub*((p.falhas||0)/100);
+    p.preco_base=p.custo_un*(p.markup||1);
+    p.mp_prices={};
+    D.marketplaces.filter(m=>m.ativo).forEach(mp=>{
+      const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+      p.mp_prices[mp.nome]=soma<1?(p.preco_base+mp.taxa_fixa)/(1-soma):p.preco_base+mp.taxa_fixa;
+    });
+    p.updatedAt=new Date().toISOString();
+  });
+  save();renderCatalog();
+  toast(`${D.catalog.length} peça(s) recalculada(s) com os custos atuais`,'#16a34a');
 }
 
 // ==================== CATALOG ANALYSIS ====================
