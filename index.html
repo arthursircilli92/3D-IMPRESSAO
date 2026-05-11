@@ -1004,7 +1004,7 @@ function renderAll(){
     if(el('cf_solar'))el('cf_solar').value=D.custos.solar||0;
   }
   editingProduct=null;currentImage=null;
-  [renderEmbCatalog,renderEmbRows,renderCostRows,renderMateriais,renderImpressoras,renderMarketplaces].forEach(fn=>{try{fn();}catch(e){console.error('[renderAll]',fn.name,e);}});
+  [renderEmbCatalog,renderEmbRows,renderCostRows,renderMateriais,renderImpressoras,renderMarketplaces,renderCatalog].forEach(fn=>{try{fn();}catch(e){console.error('[renderAll]',fn.name,e);}});
   try{updateSelects();updateProductIndicator();updateCustosSummary();calcular();}catch(e){console.error('[renderAll] post-render',e);}
   clearImage();
 }
