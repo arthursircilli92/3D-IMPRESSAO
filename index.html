@@ -1113,8 +1113,13 @@ function embCusto(c){
 
 function renderEmbCatalog(){
   const rows=D.embalagens_catalog||[];
-  document.getElementById('emb-cat-empty').style.display=rows.length?'none':'block';
-  document.getElementById('emb-cat-rows').innerHTML=rows.map((c,i)=>{
+  const elEmpty=document.getElementById('emb-cat-empty');
+  const elRows=document.getElementById('emb-cat-rows');
+  if(!elEmpty||!elRows)return;
+  elEmpty.style.display=rows.length?'none':'block';
+  elRows.innerHTML=rows.map((c,i)=>{
+    if(!c||typeof c!=='object')return '';
+    if(!c.tipo)c.tipo='un';if(!c.kit)c.kit=[];
     const isRolo=c.tipo==='rolo';
     const cu=embCusto(c);
     const cuLabel=isRolo?R(cu*100)+'/m':R(cu)+'/un.';
@@ -1771,8 +1776,8 @@ async function init(){
     document.getElementById('cf_faturamento').value=D.custos.faturamento||4000;
     document.getElementById('cf_solar').value=D.custos.solar||0;
   }
-  renderEmbCatalog();renderEmbRows();renderCostRows();renderMateriais();renderImpressoras();renderMarketplaces();
-  updateSelects();updateProductIndicator();updateCustosSummary();calcular();
+  [renderEmbCatalog,renderEmbRows,renderCostRows,renderMateriais,renderImpressoras,renderMarketplaces].forEach(fn=>{try{fn();}catch(e){console.error('[init]',fn.name,e);}});
+  try{updateSelects();updateProductIndicator();updateCustosSummary();calcular();}catch(e){console.error('[init] post-render',e);}
 
   setupRealtime();   // sincronização em tempo real
   setupPresence();   // indicador de quem está online
