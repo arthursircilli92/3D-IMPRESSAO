@@ -763,22 +763,18 @@ function loadFromLocalStorage() {
   normalizeCatalog();
 }
 
-async function syncFromSupabase() {
+async function syncFromSupabase(rerender=false) {
   try {
-    const { data } = await sb.from('app_data').select('data').eq('id','main').maybeSingle();
+    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000));
+    const query = sb.from('app_data').select('data').eq('id','main').maybeSingle();
+    const { data } = await Promise.race([query, timeout]);
     if (!data || !data.data) return;
-    const sbData = data.data;
-    const st = sbData._savedAt || 0;
-    const lt = D._savedAt || 0;
-    const localEmpty = !_hasRealData(D);
-    if (st > lt || localEmpty) {
-      D = { ...D, ...sbData };
-      D.embItems = [];
-      normalizeCatalog();
-      try { localStorage.setItem(SK, JSON.stringify(D)); } catch(e) {}
-      renderAll();
-    }
-  } catch(e) { console.warn('Supabase sync failed:', e); }
+    D = { ...D, ...data.data }; // Supabase é a fonte de verdade — sempre aplica
+    D.embItems = [];
+    normalizeCatalog();
+    try { localStorage.setItem(SK, JSON.stringify(D)); } catch(e) {}
+    if (rerender) renderAll();
+  } catch(e) { console.warn('Supabase sync failed/timeout:', e); }
 }
 
 function normalizeCatalog(){
@@ -1885,8 +1881,16 @@ async function init(){
     document.getElementById('username-modal').classList.add('hidden');
   }
 
-  loadFromLocalStorage(); // síncrono — renderiza imediatamente com dados locais
-  syncFromSupabase();     // assíncrono — atualiza em background se Supabase tiver dados mais novos
+  loadFromLocalStorage();
+
+  // Aguarda Supabase (fonte de verdade) com timeout de 10s
+  const syncBar=document.createElement('div');
+  syncBar.id='sync-bar';
+  syncBar.style='position:fixed;top:0;left:0;right:0;height:3px;background:var(--blue);z-index:9999;animation:sync-pulse 1s ease-in-out infinite;';
+  document.head.insertAdjacentHTML('beforeend','<style>@keyframes sync-pulse{0%,100%{opacity:.5}50%{opacity:1}}</style>');
+  document.body.appendChild(syncBar);
+  await syncFromSupabase();
+  syncBar.remove();
 
   if(D.custos){
     document.getElementById('cf_kwh').value=D.custos.kwh||0.84;
