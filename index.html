@@ -245,6 +245,19 @@ select{cursor:pointer;}
 .img-remove{background:none;border:none;cursor:pointer;color:var(--t3);padding:2px 5px;border-radius:4px;font-size:13px;transition:all .1s;display:none;}
 .img-remove:hover{background:var(--red-s);color:var(--red);}
 
+/* CATALOG ANALYSIS PANEL */
+.cat-mp-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.cat-mp-tbl th{text-align:left;padding:5px 10px;font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);}
+.cat-mp-tbl td{padding:7px 10px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;}
+.cat-mp-tbl tr:last-child td{border-bottom:none;}
+.cat-analysis-wrap{padding:14px 20px;background:var(--bg2);border-top:2px solid var(--blue);display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;}
+.cat-comp-box{min-width:190px;max-width:230px;}
+.cat-comp-box label{display:block;font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:8px;}
+.cat-comp-box .comp-input-row{display:flex;gap:6px;align-items:center;margin-bottom:10px;}
+.cat-comp-box .comp-input-row span{color:var(--t3);font-size:13px;}
+.cat-comp-box .comp-meta{font-size:12px;color:var(--t3);line-height:1.8;}
+.cat-comp-box .comp-meta strong{color:var(--t1);}
+
 /* IMAGE TOOLTIP IN CATALOG */
 .img-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:5px;background:var(--blue-s);color:var(--blue);cursor:pointer;border:1px solid var(--blue-b);}
 .img-trigger svg{width:14px;height:14px;}
@@ -1561,8 +1574,14 @@ function renderCatalog(){
       <td style="text-align:center;white-space:nowrap;">
         <button class="btn btn-outline btn-xs" onclick="loadProduct(${p.id})">Editar</button>
         <button class="btn btn-danger btn-xs" onclick="deleteProduct(${p.id})" style="margin-left:4px;">Excluir</button>
+        <button class="btn btn-xs" id="ca-btn-${p.id}" onclick="toggleAnalysis(${p.id})" style="margin-left:4px;background:var(--bg2);border:1px solid var(--border2);color:var(--t2);">Análise</button>
       </td>
-    </tr>`).join('');
+    </tr>
+    <tr id="ca-row-${p.id}" style="display:none;"><td id="ca-td-${p.id}" colspan="99" style="padding:0;"></td></tr>`).join('');
+  if(_catAnalysisOpen && list.find(p=>p.id===_catAnalysisOpen)){
+    const row=document.getElementById('ca-row-'+_catAnalysisOpen);
+    if(row){row.style.display='';renderAnalysisPanel(_catAnalysisOpen);}
+  }
 }
 
 function deleteProduct(id){
@@ -1572,6 +1591,98 @@ function deleteProduct(id){
   if(editingProduct===id){editingProduct=null;updateProductIndicator();}
   save();renderCatalog();
   toast(`${p.code} excluído`,'#475569');
+}
+
+// ==================== CATALOG ANALYSIS ====================
+let _catAnalysisOpen=null;
+let _compPrices={};
+
+function toggleAnalysis(id){
+  const row=document.getElementById('ca-row-'+id);
+  const btn=document.getElementById('ca-btn-'+id);
+  if(!row)return;
+  if(_catAnalysisOpen===id){
+    row.style.display='none';
+    if(btn)btn.style.background='var(--bg2)';
+    _catAnalysisOpen=null;
+    return;
+  }
+  if(_catAnalysisOpen){
+    const old=document.getElementById('ca-row-'+_catAnalysisOpen);
+    const oldBtn=document.getElementById('ca-btn-'+_catAnalysisOpen);
+    if(old)old.style.display='none';
+    if(oldBtn)oldBtn.style.background='var(--bg2)';
+  }
+  _catAnalysisOpen=id;
+  row.style.display='';
+  if(btn)btn.style.background='var(--blue-s)';
+  renderAnalysisPanel(id);
+}
+
+function renderAnalysisPanel(id){
+  const p=D.catalog.find(x=>x.id===id);
+  const td=document.getElementById('ca-td-'+id);
+  if(!p||!td)return;
+  const ativos=D.marketplaces.filter(m=>m.ativo);
+  const compPrice=_compPrices[id]||0;
+  const mpRows=ativos.map((mp,i)=>{
+    const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+    const myPreco=soma<1?(p.preco_base+mp.taxa_fixa)/(1-soma):p.preco_base+mp.taxa_fixa;
+    const myLucroLiq=myPreco-(myPreco*soma+mp.taxa_fixa)-p.custo_un;
+    const myMargem=myPreco>0?(myLucroLiq/myPreco*100):0;
+    const myColor=myLucroLiq>=0?'var(--green)':'var(--red)';
+    return `<tr>
+      <td style="font-weight:600;">${esc(mp.nome)}</td>
+      <td>${R(myPreco)}</td>
+      <td style="color:${myColor};font-weight:600;">${R(myLucroLiq)}</td>
+      <td style="color:${myColor};">${myMargem.toFixed(1)}%</td>
+      <td id="ca-cl-${id}-${i}" style="color:var(--t3);">—</td>
+      <td id="ca-cm-${id}-${i}" style="color:var(--t3);">—</td>
+    </tr>`;
+  }).join('');
+  td.innerHTML=`<div class="cat-analysis-wrap">
+    <div style="flex:1;min-width:320px;overflow-x:auto;">
+      <table class="cat-mp-tbl">
+        <thead><tr>
+          <th>Canal</th><th>Preço sugerido</th><th>Lucro líq.</th><th>Margem</th>
+          <th style="color:var(--amber);">Lucro (concorrente)</th>
+          <th style="color:var(--amber);">Margem</th>
+        </tr></thead>
+        <tbody>${mpRows}</tbody>
+      </table>
+    </div>
+    <div class="cat-comp-box">
+      <label>Testar preço do concorrente</label>
+      <div class="comp-input-row">
+        <span>R$</span>
+        <input type="number" step="0.01" min="0" placeholder="0,00"
+          value="${compPrice>0?compPrice:''}"
+          style="width:110px;"
+          oninput="_compPrices[${id}]=parseFloat(this.value)||0;updateCompResults(${id})">
+      </div>
+      <div class="comp-meta">
+        Custo unitário: <strong>${R(p.custo_un)}</strong><br>
+        Preço base: <strong>${R(p.preco_base)}</strong>
+      </div>
+    </div>
+  </div>`;
+  if(compPrice>0)updateCompResults(id);
+}
+
+function updateCompResults(id){
+  const p=D.catalog.find(x=>x.id===id);
+  if(!p)return;
+  const compPrice=_compPrices[id]||0;
+  D.marketplaces.filter(m=>m.ativo).forEach((mp,i)=>{
+    const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+    const compLucroLiq=compPrice-(compPrice*soma+mp.taxa_fixa)-p.custo_un;
+    const compMargem=compPrice>0?(compLucroLiq/compPrice*100):0;
+    const color=compLucroLiq>=0?'var(--green)':'var(--red)';
+    const lEl=document.getElementById(`ca-cl-${id}-${i}`);
+    const mEl=document.getElementById(`ca-cm-${id}-${i}`);
+    if(lEl){lEl.textContent=R(compLucroLiq);lEl.style.color=color;lEl.style.fontWeight='600';}
+    if(mEl){mEl.textContent=compMargem.toFixed(1)+'%';mEl.style.color=color;}
+  });
 }
 
 // ==================== SEARCH ====================
