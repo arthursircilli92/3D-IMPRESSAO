@@ -760,7 +760,7 @@ async function load() {
 
   D.embItems = [];
   normalizeCatalog();
-  localStorage.setItem(SK, JSON.stringify(D));
+  try { localStorage.setItem(SK, JSON.stringify(D)); } catch(e) { console.warn('localStorage save failed in load()', e); }
 }
 
 function normalizeCatalog(){
@@ -1769,7 +1769,7 @@ async function init(){
     document.getElementById('username-modal').classList.add('hidden');
   }
 
-  await load(); // aguarda carregar do Supabase antes de renderizar
+  try { await load(); } catch(e) { console.error('load() failed, rendering with defaults:', e); } // aguarda carregar do Supabase antes de renderizar
 
   if(D.custos){
     document.getElementById('cf_kwh').value=D.custos.kwh||0.84;
