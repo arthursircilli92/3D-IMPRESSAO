@@ -258,6 +258,12 @@ select{cursor:pointer;}
 .cat-comp-box .comp-meta{font-size:12px;color:var(--t3);line-height:1.8;}
 .cat-comp-box .comp-meta strong{color:var(--t1);}
 
+/* BULK EDIT BAR */
+.bulk-bar{display:none;align-items:center;gap:10px;flex-wrap:wrap;background:var(--blue-s);border:1.5px solid var(--blue-b);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;}
+.bulk-bar.visible{display:flex;}
+.bulk-count{font-size:13px;font-weight:700;color:var(--blue);white-space:nowrap;}
+.bulk-sep{width:1px;height:20px;background:var(--blue-b);flex-shrink:0;}
+
 /* IMAGE TOOLTIP IN CATALOG */
 .img-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:5px;background:var(--blue-s);color:var(--blue);cursor:pointer;border:1px solid var(--blue-b);}
 .img-trigger svg{width:14px;height:14px;}
@@ -435,7 +441,7 @@ select{cursor:pointer;}
             <input type="number" id="dim_w" placeholder="Larg" step="0.5" min="0" style="width:60px;text-align:center;" oninput="recEmb()">
             <span style="color:var(--t3);font-size:13px;">×</span>
             <input type="number" id="dim_h" placeholder="Alt" step="0.5" min="0" style="width:60px;text-align:center;" oninput="recEmb()">
-            <span style="font-size:11px;color:var(--t3);">+ 2cm/lado</span>
+            <span style="font-size:11px;color:var(--t3);">+ 1cm/lado</span>
           </div>
           <div id="emb-rec" style="margin-top:8px;"></div>
         </div>
@@ -519,6 +525,24 @@ select{cursor:pointer;}
       Nova Peça
     </button>
   </div>
+  <!-- BULK EDIT BAR -->
+  <div class="bulk-bar" id="bulk-bar">
+    <span class="bulk-count" id="bulk-count">0 selecionados</span>
+    <span class="bulk-sep"></span>
+    <select id="bulk-prop" style="font-size:13px;" onchange="updateBulkInput()">
+      <option value="">— Propriedade —</option>
+      <option value="markup">Markup (×)</option>
+      <option value="falhas">Taxa de Falha (%)</option>
+      <option value="unidades_mes">Unidades/mês previstas</option>
+      <option value="materialId">Material</option>
+      <option value="impressoraId">Impressora</option>
+    </select>
+    <input type="number" id="bulk-val-num" step="0.1" min="0" placeholder="Novo valor" style="width:120px;display:none;">
+    <select id="bulk-val-sel" style="font-size:13px;display:none;"></select>
+    <button class="btn btn-primary btn-sm" onclick="applyBulkEdit()">Aplicar</button>
+    <button class="btn btn-outline btn-sm" onclick="clearBulkSelection()">Cancelar</button>
+  </div>
+
   <div class="card" style="padding:0;overflow:hidden;">
     <div style="overflow-x:auto;">
       <table class="tbl" id="cat-table">
@@ -1392,7 +1416,7 @@ function recEmb(){
   const el=document.getElementById('emb-rec');
   if(!el)return;
   if(!l||!w||!h){el.innerHTML='';return;}
-  const ml=l+4,mw=w+4,mh=h+4;
+  const ml=l+2,mw=w+2,mh=h+2;
   const boxes=(D.embalagens_catalog||[])
     .filter(c=>boxFits(c,ml,mw,mh))
     .sort((a,b)=>(a.dim_l*a.dim_w*a.dim_h)-(b.dim_l*b.dim_w*b.dim_h));
@@ -1547,12 +1571,18 @@ function renderCatalog(){
     return;
   }
   const mpNames=[...new Set(D.catalog.flatMap(p=>Object.keys(p.mp_prices||{})))];
+  const allIds=list.map(p=>p.id);
+  const allChecked=allIds.length&&allIds.every(id=>_selectedProducts.has(id));
   document.querySelector('#cat-table thead tr').innerHTML=`
+    <th style="width:32px;text-align:center;"><input type="checkbox" ${allChecked?'checked':''} onchange="toggleSelectAll(this.checked)" title="Selecionar todos"></th>
     <th style="text-align:center;width:44px;">Foto</th><th>Código</th><th>Nome</th><th>STL</th><th>Material</th><th>Tempo</th><th>Peso</th>
     <th>Custo Un.</th><th>Preço Base</th>${mpNames.map(n=>`<th>${esc(n)}</th>`).join('')}
     <th>Atualizado</th><th style="text-align:center">Ações</th>`;
   tbody.innerHTML=list.map(p=>`
-    <tr>
+    <tr${_selectedProducts.has(p.id)?' style="background:var(--blue-s);"':''}>
+      <td style="text-align:center;padding:5px 6px;">
+        <input type="checkbox" ${_selectedProducts.has(p.id)?'checked':''} onchange="toggleSelectProduct(${p.id},this.checked)">
+      </td>
       <td style="text-align:center;padding:5px 6px;">
         ${p.image
           ? `<span class="img-trigger" onmouseenter="showImgPopup('${p.image}',this)" onmouseleave="hideImgPopup()" title="Ver foto">
@@ -1630,6 +1660,108 @@ function recalcularTudo(){
   });
   save();renderCatalog();
   toast(`${D.catalog.length} peça(s) recalculada(s) com os custos atuais`,'#16a34a');
+}
+
+// ==================== BULK EDIT ====================
+let _selectedProducts=new Set();
+
+function toggleSelectProduct(id,checked){
+  if(checked)_selectedProducts.add(id);else _selectedProducts.delete(id);
+  updateBulkBar();
+  // highlight row without full re-render
+  const rows=document.querySelectorAll('#cat-body tr');
+  rows.forEach(tr=>{
+    const cb=tr.querySelector('input[type=checkbox]');
+    if(cb)tr.style.background=cb.checked?'var(--blue-s)':'';
+  });
+}
+
+function toggleSelectAll(checked){
+  const list=D.catalog.filter(p=>{const q=(document.getElementById('cat-search')?.value||'').toLowerCase();return!q||p.code.toLowerCase().includes(q)||p.nome.toLowerCase().includes(q);});
+  list.forEach(p=>checked?_selectedProducts.add(p.id):_selectedProducts.delete(p.id));
+  renderCatalog();
+  updateBulkBar();
+}
+
+function updateBulkBar(){
+  const n=_selectedProducts.size;
+  const bar=document.getElementById('bulk-bar');
+  if(!bar)return;
+  if(n===0){bar.classList.remove('visible');return;}
+  bar.classList.add('visible');
+  document.getElementById('bulk-count').textContent=`${n} peça${n>1?'s':''} selecionada${n>1?'s':''}`;
+}
+
+function updateBulkInput(){
+  const prop=document.getElementById('bulk-prop').value;
+  const num=document.getElementById('bulk-val-num');
+  const sel=document.getElementById('bulk-val-sel');
+  num.style.display='none';sel.style.display='none';
+  if(!prop)return;
+  if(prop==='materialId'){
+    sel.innerHTML=D.materiais.map(m=>`<option value="${m.id}">${esc(m.nome)}</option>`).join('');
+    sel.style.display='';
+  } else if(prop==='impressoraId'){
+    sel.innerHTML=D.impressoras.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('');
+    sel.style.display='';
+  } else {
+    const cfg={markup:{step:'0.1',min:'0.1',placeholder:'Ex: 2.5'},falhas:{step:'1',min:'0',placeholder:'Ex: 5'},unidades_mes:{step:'1',min:'1',placeholder:'Ex: 40'}};
+    const c=cfg[prop]||{};
+    num.step=c.step||'1';num.min=c.min||'0';num.placeholder=c.placeholder||'';num.value='';
+    num.style.display='';
+  }
+}
+
+function clearBulkSelection(){
+  _selectedProducts.clear();
+  renderCatalog();
+  updateBulkBar();
+}
+
+function _recalcProduct(p){
+  const fixo_total=D.custos.items.reduce((s,i)=>s+(i.valor||0),0);
+  const fixo_liq=Math.max(0,fixo_total-(D.custos.solar||0));
+  const kwh=D.custos.kwh||0.84;
+  const mat=D.materiais.find(m=>m.id===p.materialId);
+  const imp=D.impressoras.find(pr=>pr.id===p.impressoraId);
+  const c_mat=mat?(p.peso/1000)*mat.preco_kg:0;
+  const c_ener=imp?(imp.potencia/1000)*p.tempo*kwh:0;
+  const c_amort=imp&&imp.vida_util>0?(imp.valor/imp.vida_util)*p.tempo:0;
+  let c_emb=0;
+  (p.embalagens||[]).forEach(e=>{const ci=(D.embalagens_catalog||[]).find(x=>x.id==e.catalog_id);c_emb+=(e.qty||0)*(ci?embCusto(ci):(e.custo_un||0));});
+  c_emb=c_emb/Math.max(1,p.qtd||1);
+  const c_fixo=fixo_liq/Math.max(1,p.unidades_mes||40);
+  const sub=c_mat+c_ener+c_amort+c_emb+c_fixo;
+  p.custo_un=sub+sub*((p.falhas||0)/100);
+  p.preco_base=p.custo_un*(p.markup||1);
+  p.mp_prices={};
+  D.marketplaces.filter(m=>m.ativo).forEach(mp=>{const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;p.mp_prices[mp.nome]=soma<1?(p.preco_base+mp.taxa_fixa)/(1-soma):p.preco_base+mp.taxa_fixa;});
+  p.updatedAt=new Date().toISOString();
+}
+
+function applyBulkEdit(){
+  const prop=document.getElementById('bulk-prop').value;
+  if(!prop){toast('Selecione uma propriedade para editar','#dc2626');return;}
+  const n=_selectedProducts.size;
+  if(!n)return;
+  let val;
+  if(prop==='materialId'||prop==='impressoraId'){
+    val=parseInt(document.getElementById('bulk-val-sel').value);
+    if(!val){toast('Selecione um valor válido','#dc2626');return;}
+  } else {
+    val=parseFloat(document.getElementById('bulk-val-num').value);
+    if(isNaN(val)){toast('Informe um valor válido','#dc2626');return;}
+  }
+  D.catalog.forEach(p=>{
+    if(!_selectedProducts.has(p.id))return;
+    if(prop==='materialId'){const m=D.materiais.find(x=>x.id===val);p.materialId=val;p.materialNome=m?m.nome:'—';}
+    else if(prop==='impressoraId'){const pr=D.impressoras.find(x=>x.id===val);p.impressoraId=val;p.impressoraNome=pr?pr.nome:'—';}
+    else p[prop]=val;
+    _recalcProduct(p);
+  });
+  _selectedProducts.clear();
+  save();renderCatalog();updateBulkBar();
+  toast(`${n} peça${n>1?'s':''} atualizada${n>1?'s':''}`,'#16a34a');
 }
 
 // ==================== CATALOG ANALYSIS ====================
