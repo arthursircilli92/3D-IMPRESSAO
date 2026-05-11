@@ -734,12 +734,17 @@ let D={
 let editingProduct=null;
 let currentImage=null;
 
+function _hasRealData(d) {
+  return d && ((d.materiais||[]).length>0 || (d.impressoras||[]).length>0 || (d.catalog||[]).length>0 || (d.embalagens_catalog||[]).length>0);
+}
+
 function loadFromLocalStorage() {
   try {
     const s = localStorage.getItem(SK);
     if (!s) return;
     const lsData = JSON.parse(s);
-    D = { ...D, ...lsData };
+    if (_hasRealData(lsData)) D = { ...D, ...lsData };
+    else console.warn('localStorage parece vazio/corrompido, ignorando');
   } catch(e) { console.warn('localStorage load failed:', e); }
   D.embItems = [];
   normalizeCatalog();
@@ -752,7 +757,8 @@ async function syncFromSupabase() {
     const sbData = data.data;
     const st = sbData._savedAt || 0;
     const lt = D._savedAt || 0;
-    if (st > lt) {
+    const localEmpty = !_hasRealData(D);
+    if (st > lt || localEmpty) {
       D = { ...D, ...sbData };
       D.embItems = [];
       normalizeCatalog();
