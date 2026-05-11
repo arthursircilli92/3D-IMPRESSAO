@@ -734,33 +734,32 @@ let D={
 let editingProduct=null;
 let currentImage=null;
 
-async function load() {
-  let sbData = null;
-  try {
-    const { data } = await sb.from('app_data').select('data').eq('id','main').maybeSingle();
-    if (data && data.data) sbData = data.data;
-  } catch(e) { console.warn('Supabase load failed:', e); }
-
-  let lsData = null;
+function loadFromLocalStorage() {
   try {
     const s = localStorage.getItem(SK);
-    if (s) lsData = JSON.parse(s);
-  } catch(e) {}
-
-  // usa o mais recente entre Supabase e localStorage
-  if (sbData && lsData) {
-    const st = sbData._savedAt || 0;
-    const lt = lsData._savedAt || 0;
-    D = { ...D, ...(lt > st ? lsData : sbData) };
-  } else if (sbData) {
-    D = { ...D, ...sbData };
-  } else if (lsData) {
+    if (!s) return;
+    const lsData = JSON.parse(s);
     D = { ...D, ...lsData };
-  }
-
+  } catch(e) { console.warn('localStorage load failed:', e); }
   D.embItems = [];
   normalizeCatalog();
-  try { localStorage.setItem(SK, JSON.stringify(D)); } catch(e) { console.warn('localStorage save failed in load()', e); }
+}
+
+async function syncFromSupabase() {
+  try {
+    const { data } = await sb.from('app_data').select('data').eq('id','main').maybeSingle();
+    if (!data || !data.data) return;
+    const sbData = data.data;
+    const st = sbData._savedAt || 0;
+    const lt = D._savedAt || 0;
+    if (st > lt) {
+      D = { ...D, ...sbData };
+      D.embItems = [];
+      normalizeCatalog();
+      try { localStorage.setItem(SK, JSON.stringify(D)); } catch(e) {}
+      renderAll();
+    }
+  } catch(e) { console.warn('Supabase sync failed:', e); }
 }
 
 function normalizeCatalog(){
@@ -1769,10 +1768,8 @@ async function init(){
     document.getElementById('username-modal').classList.add('hidden');
   }
 
-  try { await load(); } catch(e) { console.error('load() failed, rendering with defaults:', e); } // aguarda carregar do Supabase antes de renderizar
-
-  // DEBUG TEMPORÁRIO — remover depois
-  {const dbg=document.createElement('div');dbg.style='position:fixed;top:60px;right:16px;z-index:9999;background:#7c3aed;color:#fff;padding:12px 16px;border-radius:8px;font-size:13px;font-family:monospace;box-shadow:0 4px 12px rgba(0,0,0,.4);max-width:320px;';dbg.innerHTML=`<b>DEBUG após load()</b><br>materiais: ${(D.materiais||[]).length}<br>impressoras: ${(D.impressoras||[]).length}<br>custos.items: ${(D.custos?.items||[]).length}<br>marketplaces: ${(D.marketplaces||[]).length}<br>embalagens: ${(D.embalagens_catalog||[]).length}<br><small style="opacity:.7">clique pra fechar</small>`;dbg.onclick=()=>dbg.remove();document.body.appendChild(dbg);}
+  loadFromLocalStorage(); // síncrono — renderiza imediatamente com dados locais
+  syncFromSupabase();     // assíncrono — atualiza em background se Supabase tiver dados mais novos
 
   if(D.custos){
     document.getElementById('cf_kwh').value=D.custos.kwh||0.84;
