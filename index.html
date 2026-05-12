@@ -146,10 +146,18 @@ select{cursor:pointer;}
 .mp-profit.lph{background:var(--surface2);}
 .mp-profit.lph .pp-v{color:var(--t1);}
 /* catalog filter bar */
-.cat-filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;padding:10px 13px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);}
-.cat-filter-bar label{font-size:12px;color:var(--t2);white-space:nowrap;}
-.cat-filter-bar select,.cat-filter-bar input[type=number]{font-size:12px;padding:4px 7px;height:28px;}
-.cat-filter-bar .filter-group{display:flex;align-items:center;gap:5px;}
+.cat-filter-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;padding:7px 11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-sm);}
+.cf-grp{display:flex;align-items:center;gap:4px;}
+.cf-lbl{font-size:10.5px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+.cf-sep{width:1px;height:14px;background:var(--border2);margin:0 2px;flex-shrink:0;}
+.cf-sel{height:26px;font-size:12px;padding:0 6px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--t1);cursor:pointer;outline:none;transition:border-color .12s;}
+.cf-sel:hover,.cf-sel:focus{border-color:var(--blue);}
+.cf-num{height:26px;font-size:12px;padding:0 7px;width:58px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--t1);outline:none;transition:border-color .12s;}
+.cf-num:hover,.cf-num:focus{border-color:var(--blue);}
+.cf-chip{display:flex;align-items:center;gap:5px;height:26px;padding:0 10px;border:1px solid var(--border);border-radius:13px;background:var(--surface2);color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;transition:all .12s;white-space:nowrap;user-select:none;}
+.cf-chip:hover{border-color:var(--border2);color:var(--t1);}
+.cf-chip.active{background:var(--red-s);border-color:var(--red-b);color:var(--red);}
+.cf-chip input{display:none;}
 
 /* TABLE */
 .tbl{width:100%;border-collapse:collapse;}
@@ -534,37 +542,41 @@ select{cursor:pointer;}
   </div>
   <!-- FILTER BAR -->
   <div class="cat-filter-bar" id="cat-filter-bar">
-    <div class="filter-group">
-      <label>Ordenar por</label>
-      <select id="cf-sort" onchange="renderCatalog()">
-        <option value="">— Padrão —</option>
+    <div class="cf-grp">
+      <span class="cf-lbl">Ordenar</span>
+      <select id="cf-sort" class="cf-sel" onchange="renderCatalog()">
+        <option value="">Padrão</option>
         <option value="lph">Lucro/hora</option>
         <option value="margem">Margem</option>
         <option value="custo">Custo</option>
         <option value="tempo">Tempo</option>
         <option value="peso">Peso</option>
       </select>
-      <select id="cf-order" onchange="renderCatalog()">
-        <option value="desc">↓ Maior</option>
-        <option value="asc">↑ Menor</option>
+      <select id="cf-order" class="cf-sel" style="width:44px;padding:0 3px;" onchange="renderCatalog()">
+        <option value="desc">↓</option>
+        <option value="asc">↑</option>
       </select>
     </div>
-    <div class="filter-group">
-      <label>Material</label>
-      <select id="cf-mat" onchange="renderCatalog()"><option value="">Todos</option></select>
+    <div class="cf-sep"></div>
+    <div class="cf-grp">
+      <span class="cf-lbl">Material</span>
+      <select id="cf-mat" class="cf-sel" onchange="renderCatalog()"><option value="">Todos</option></select>
     </div>
-    <div class="filter-group">
-      <label>Impressora</label>
-      <select id="cf-imp" onchange="renderCatalog()"><option value="">Todas</option></select>
+    <div class="cf-grp">
+      <span class="cf-lbl">Impressora</span>
+      <select id="cf-imp" class="cf-sel" onchange="renderCatalog()"><option value="">Todas</option></select>
     </div>
-    <div class="filter-group">
-      <label>Tempo máx (h)</label>
-      <input type="number" id="cf-tempo" step="0.5" min="0" placeholder="—" oninput="renderCatalog()" style="width:70px;">
+    <div class="cf-sep"></div>
+    <div class="cf-grp">
+      <span class="cf-lbl">Tempo máx</span>
+      <input type="number" id="cf-tempo" class="cf-num" step="0.5" min="0" placeholder="h" oninput="renderCatalog()">
     </div>
-    <div class="filter-group">
-      <label><input type="checkbox" id="cf-abaixo" onchange="renderCatalog()" style="margin-right:4px;">Abaixo da meta</label>
-    </div>
-    <button class="btn btn-outline btn-xs" onclick="resetCatFilters()">Limpar</button>
+    <div class="cf-sep"></div>
+    <label class="cf-chip" id="cf-abaixo-chip" title="Mostrar apenas peças abaixo da meta de margem em algum canal">
+      <input type="checkbox" id="cf-abaixo" onchange="this.closest('.cf-chip').classList.toggle('active',this.checked);renderCatalog()">
+      Abaixo da meta
+    </label>
+    <button class="btn btn-outline btn-xs" onclick="resetCatFilters()" style="margin-left:auto;">Limpar</button>
   </div>
 
   <!-- BULK EDIT BAR -->
@@ -1639,6 +1651,7 @@ function resetCatFilters(){
   ['cf-sort','cf-order','cf-mat','cf-imp'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=el.id==='cf-order'?'desc':'';});
   const t=document.getElementById('cf-tempo');if(t)t.value='';
   const a=document.getElementById('cf-abaixo');if(a)a.checked=false;
+  document.getElementById('cf-abaixo-chip')?.classList.remove('active');
   renderCatalog();
 }
 function _updateCatFilterSelects(){
@@ -1691,7 +1704,8 @@ function renderCatalog(){
     tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:26px;">${D.catalog.length?'Nenhuma peça encontrada.':'Nenhuma peça salva ainda.'}</td></tr>`;
     return;
   }
-  const mpNames=[...new Set(D.catalog.flatMap(p=>Object.keys(p.mp_prices||{})))];
+  const allMpInCatalog=new Set(D.catalog.flatMap(p=>Object.keys(p.mp_prices||{})));
+  const mpNames=D.marketplaces.filter(m=>allMpInCatalog.has(m.nome)).map(m=>m.nome);
   const allIds=list.map(p=>p.id);
   const allChecked=allIds.length&&allIds.every(id=>_selectedProducts.has(id));
   document.querySelector('#cat-table thead tr').innerHTML=`
