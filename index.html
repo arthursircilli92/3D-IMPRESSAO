@@ -774,6 +774,7 @@ let D={
 };
 let editingProduct=null;
 let currentImage=null;
+let _syncDone=false;
 
 function _hasRealData(d) {
   return d && ((d.materiais||[]).length>0 || (d.impressoras||[]).length>0 || (d.catalog||[]).length>0 || (d.embalagens_catalog||[]).length>0);
@@ -1058,7 +1059,14 @@ function showTab(tab,el){
   document.getElementById('tab-'+tab).classList.add('active');
   if(el)el.classList.add('active');
   if(tab==='calcular'){updateSelects();calcular();}
-  if(tab==='catalogo')renderCatalog();
+  if(tab==='catalogo'){
+    if(!_syncDone&&!D.catalog.length){
+      const tb=document.getElementById('cat-body');
+      if(tb)tb.innerHTML='<tr><td colspan="99" style="text-align:center;padding:32px;color:var(--t3);">Carregando dados...</td></tr>';
+    } else {
+      renderCatalog();
+    }
+  }
   if(tab==='custos')updateCustosSummary();
 }
 
@@ -2065,6 +2073,7 @@ async function init(){
   document.head.insertAdjacentHTML('beforeend','<style>@keyframes sync-pulse{0%,100%{opacity:.5}50%{opacity:1}}</style>');
   document.body.appendChild(syncBar);
   await syncFromSupabase();
+  _syncDone=true;
   syncBar.remove();
 
   if(D.custos){
@@ -2072,7 +2081,7 @@ async function init(){
     document.getElementById('cf_faturamento').value=D.custos.faturamento||4000;
     document.getElementById('cf_solar').value=D.custos.solar||0;
   }
-  [renderEmbCatalog,renderEmbRows,renderCostRows,renderMateriais,renderImpressoras,renderMarketplaces].forEach(fn=>{try{fn();}catch(e){console.error('[init]',fn.name,e);}});
+  [renderEmbCatalog,renderEmbRows,renderCostRows,renderMateriais,renderImpressoras,renderMarketplaces,renderCatalog].forEach(fn=>{try{fn();}catch(e){console.error('[init]',fn.name,e);}});
   try{updateSelects();updateProductIndicator();updateCustosSummary();calcular();}catch(e){console.error('[init] post-render',e);}
 
   setupRealtime();   // sincronização em tempo real
