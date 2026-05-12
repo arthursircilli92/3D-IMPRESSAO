@@ -507,6 +507,7 @@ select{cursor:pointer;}
           Preço base (custo × markup)
           <div style="font-size:18px;font-weight:800;color:var(--blue);margin-top:2px;font-variant-numeric:tabular-nums;" id="r_preco_base">R$ 0,00</div>
         </div>
+        <div id="r-warnings" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;"></div>
       </div>
 
       <div class="card">
@@ -1170,6 +1171,11 @@ function calcular(){
   set('r_custo_info',`${qtd} na mesa → total ${R(custo_un*qtd)}`);
   set('r_preco_base',R(preco_base));
   _lastCustoUn=custo_un;
+  const warns=[];
+  if(!matId)warns.push('Material não selecionado — custo de filamento não incluído');
+  if(!impId)warns.push('Impressora não selecionada — energia e amortização não incluídas');
+  const wEl=document.getElementById('r-warnings');
+  if(wEl)wEl.innerHTML=warns.map(w=>`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-s);border-radius:5px;padding:5px 9px;text-align:left;">⚠ ${w}</div>`).join('');
   set('emb-total',R(emb));
   updateCustosSummary(fixo_total,D.custos.solar||0,fixo_liq,c_fixo,unidades);
   renderMpResults(custo_un,preco_base,tempo);
@@ -1187,6 +1193,14 @@ function _pratInfo(mp,prat,custo_un,tempo){
   const c=mg>=meta?'var(--green)':'var(--red)';
   return`<span style="color:${c};font-weight:700;">${mg.toFixed(1)}%</span>`
     +(lph!==null?`<span style="color:${c};font-size:10px;margin-left:4px;">${R(lph)}/h</span>`:'');
+}
+
+function applyPsico(mpNome,preco){
+  const rounded=Math.floor(preco)+0.90;
+  const safeId=mpNome.replace(/\W/g,'_');
+  const input=document.getElementById('prat-input-'+safeId);
+  if(input){input.value=rounded.toFixed(2);}
+  updatePraticado(mpNome,rounded.toFixed(2));
 }
 
 function updatePraticado(mpNome,val){
@@ -1243,8 +1257,11 @@ function renderMpResults(custo_un,preco_base,tempo=0){
       <div style="display:flex;align-items:center;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);">
         <span style="font-size:11px;color:var(--t3);flex-shrink:0;">Preço praticado</span>
         <input type="number" step="0.01" min="0" placeholder="R$ —" value="${prat||''}"
+          id="prat-input-${safeId}"
           style="width:96px;font-size:12px;padding:3px 7px;height:26px;"
           oninput="updatePraticado('${esc(mp.nome)}',this.value)">
+        <button title="Arredondar para .90" style="height:26px;padding:0 8px;font-size:11px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--t2);cursor:pointer;white-space:nowrap;flex-shrink:0;"
+          onclick="applyPsico('${esc(mp.nome)}',${preco.toFixed(2)})">↓,90</button>
         <div id="prat-info-${safeId}" style="font-size:12px;display:flex;align-items:center;gap:0;">${pratInfoHtml}</div>
       </div>
     </div>`;
