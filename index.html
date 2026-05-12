@@ -829,6 +829,8 @@ let D={
 let editingProduct=null;
 let currentImage=null;
 let _syncDone=false;
+let _praticado={};   // preço praticado por canal (chave = mp.nome)
+let _lastCustoUn=0; // custo_un do último calcular(), usado por updatePraticado
 
 function _hasRealData(d) {
   return d && ((d.materiais||[]).length>0 || (d.impressoras||[]).length>0 || (d.catalog||[]).length>0 || (d.embalagens_catalog||[]).length>0);
@@ -1167,6 +1169,7 @@ function calcular(){
   set('r_custo_un',R(custo_un));
   set('r_custo_info',`${qtd} na mesa → total ${R(custo_un*qtd)}`);
   set('r_preco_base',R(preco_base));
+  _lastCustoUn=custo_un;
   set('emb-total',R(emb));
   updateCustosSummary(fixo_total,D.custos.solar||0,fixo_liq,c_fixo,unidades);
   renderMpResults(custo_un,preco_base,tempo);
@@ -1174,7 +1177,31 @@ function calcular(){
 
 function calcEmbTotal(){return D.embItems.reduce((s,i)=>s+((i.qty||0)*(i.custo_un||0)),0);}
 
+function _pratInfo(mp,prat,custo_un,tempo){
+  if(!prat||prat<=0)return'';
+  const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+  const ll=prat-(prat*soma+mp.taxa_fixa)-custo_un;
+  const mg=prat>0?(ll/prat*100):0;
+  const lph=tempo>0?ll/tempo:null;
+  const meta=mp.margem_desejada!=null?mp.margem_desejada:30;
+  const c=mg>=meta?'var(--green)':'var(--red)';
+  return`<span style="color:${c};font-weight:700;">${mg.toFixed(1)}%</span>`
+    +(lph!==null?`<span style="color:${c};font-size:10px;margin-left:4px;">${R(lph)}/h</span>`:'');
+}
+
+function updatePraticado(mpNome,val){
+  const v=parseFloat(val);
+  if(v>0)_praticado[mpNome]=v;else delete _praticado[mpNome];
+  const mp=D.marketplaces.find(m=>m.nome===mpNome);
+  if(!mp)return;
+  const el=document.getElementById('prat-info-'+mpNome.replace(/\W/g,'_'));
+  if(el)el.innerHTML=_pratInfo(mp,_praticado[mpNome]||0,_lastCustoUn,_lastTempo);
+}
+
+let _lastTempo=0;
+
 function renderMpResults(custo_un,preco_base,tempo=0){
+  _lastTempo=tempo;
   const c=document.getElementById('mp-results');
   const ativos=D.marketplaces.filter(m=>m.ativo);
   if(!ativos.length){c.innerHTML='<div style="text-align:center;color:var(--t3);padding:16px 0;font-size:13px;">Nenhum canal ativo</div>';return;}
@@ -1198,6 +1225,9 @@ function renderMpResults(custo_un,preco_base,tempo=0){
     const mColor=margem>=meta?'var(--green)':'var(--red)';
     const mBg=margem>=meta?'var(--green-s)':'var(--red-s)';
     const lhColor=lucro_h!==null&&lucro_h>=0?'var(--green)':'var(--red)';
+    const prat=_praticado[mp.nome]||0;
+    const pratInfoHtml=_pratInfo(mp,prat,custo_un,tempo);
+    const safeId=mp.nome.replace(/\W/g,'_');
     return`<div class="mp-result">
       <div class="mp-result-hdr">
         <div><div class="mp-name">${esc(mp.nome)}</div><div class="mp-fees-info">${(soma*100).toFixed(0)}% em taxas${mp.taxa_fixa>0?` + taxa fixa ${R(mp.taxa_fixa)}`:''} · meta ${meta}%</div></div>
@@ -1207,8 +1237,15 @@ function renderMpResults(custo_un,preco_base,tempo=0){
       <div class="mp-profits">
         <div class="mp-profit bruto"><div class="pp-l">Lucro Bruto</div><div class="pp-v">${R(lucro_bruto)}</div></div>
         <div class="mp-profit liquido" style="background:${liqBg}"><div class="pp-l">Lucro Líquido</div><div class="pp-v" style="color:${liqColor}">${R(lucro_liq)}</div></div>
-        <div class="mp-profit margem" style="background:${mBg}"><div class="pp-l">Margem</div><div class="pp-v" style="color:${mColor}">${margem.toFixed(1)}%</div></div>
+        <div class="mp-profit margem" style="background:${mBg}"><div class="pp-l">Margem sugerida</div><div class="pp-v" style="color:${mColor}">${margem.toFixed(1)}%</div></div>
         <div class="mp-profit lph"><div class="pp-l">Lucro/hora</div><div class="pp-v" style="color:${lhColor}">${lucro_h!==null?R(lucro_h):'—'}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);">
+        <span style="font-size:11px;color:var(--t3);flex-shrink:0;">Preço praticado</span>
+        <input type="number" step="0.01" min="0" placeholder="R$ —" value="${prat||''}"
+          style="width:96px;font-size:12px;padding:3px 7px;height:26px;"
+          oninput="updatePraticado('${esc(mp.nome)}',this.value)">
+        <div id="prat-info-${safeId}" style="font-size:12px;display:flex;align-items:center;gap:0;">${pratInfoHtml}</div>
       </div>
     </div>`;
   }).join('');
@@ -1540,6 +1577,7 @@ function getFormData(){
     impressoraId:impId,impressoraNome:imp?imp.nome:'—',
     tempo,peso,qtd,falhas,markup,unidades_mes:unidades,
     embalagens:JSON.parse(JSON.stringify(D.embItems)),
+    preco_praticado:{..._praticado},
     custo_un,preco_base,mp_prices,
   };
 }
@@ -1578,6 +1616,7 @@ function loadProduct(id){
   document.getElementById('c_markup').value=p.markup||3;
   document.getElementById('c_unidades_mes').value=p.unidades_mes||40;
   D.embItems=JSON.parse(JSON.stringify(p.embalagens||[]));
+  _praticado=JSON.parse(JSON.stringify(p.preco_praticado||{}));
   renderEmbRows();updateSelects();
   setImagePreview(p.image||null);
   setTimeout(()=>{
@@ -1601,6 +1640,7 @@ function clearProduct(){
   document.getElementById('c_falhas').value=10;
   document.getElementById('c_markup').value=3;
   D.embItems=[];
+  _praticado={};
   renderEmbRows();updateProductIndicator();calcular();
 }
 
@@ -1749,6 +1789,16 @@ function renderCatalog(){
           precoColor=mc;
           extra=`<div style="font-size:11px;color:${mc};font-weight:500;">${mg.toFixed(1)}%</div>`;
           if(p.tempo>0){const lph=ll/p.tempo;extra+=`<div style="font-size:10px;color:${mc};">${R(lph)}/h</div>`;}
+          // preço praticado
+          const prat=p.preco_praticado&&p.preco_praticado[mn];
+          if(prat>0){
+            const llP=prat-(prat*soma+mp.taxa_fixa)-p.custo_un;
+            const mgP=prat>0?(llP/prat*100):0;
+            const cP=mgP>=meta?'var(--green)':'var(--red)';
+            extra+=`<div style="margin-top:3px;padding-top:3px;border-top:1px solid var(--border);font-size:10px;color:var(--t3);">Praticado</div>`;
+            extra+=`<div style="font-size:11px;color:${cP};font-weight:600;">${R(prat)}</div>`;
+            extra+=`<div style="font-size:10px;color:${cP};">${mgP.toFixed(1)}%</div>`;
+          }
         }
         return`<td style="color:${precoColor};font-weight:600;font-variant-numeric:tabular-nums;">${R(preco)}${extra}</td>`;
       }).join('')}
