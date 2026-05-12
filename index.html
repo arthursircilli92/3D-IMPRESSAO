@@ -133,7 +133,7 @@ select{cursor:pointer;}
 .mp-price-lbl{font-size:10px;color:var(--t3);text-align:right;}
 .mp-fee-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px;}
 .mp-chip{background:var(--red-s);color:var(--red);border:1px solid var(--red-b);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:500;}
-.mp-profits{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.mp-profits{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
 .mp-profit{border-radius:5px;padding:7px 8px;text-align:center;}
 .pp-l{font-size:10px;color:var(--t3);margin-bottom:1px;}
 .pp-v{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;}
@@ -143,6 +143,11 @@ select{cursor:pointer;}
 .mp-profit.liquido .pp-v{color:var(--green);}
 .mp-profit.margem{background:var(--blue-s);}
 .mp-profit.margem .pp-v{color:var(--blue);}
+.mp-profit.lph{background:var(--surface2);}
+.mp-profit.lph .pp-v{color:var(--t1);}
+.pm-toggle{display:flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;margin-top:4px;}
+.pm-btn{flex:1;padding:4px 0;font-size:12px;font-weight:500;background:var(--surface);border:none;cursor:pointer;color:var(--t2);transition:all .12s;}
+.pm-btn.active{background:var(--blue);color:#fff;}
 
 /* TABLE */
 .tbl{width:100%;border-collapse:collapse;}
@@ -454,7 +459,18 @@ select{cursor:pointer;}
         <div class="card-title" style="margin-bottom:13px">Ajustes de Cálculo</div>
         <div class="g3">
           <div class="field"><label>Taxa de Falhas (%)</label><input type="number" id="c_falhas" step="1" min="0" max="50" value="10" oninput="calcular()"></div>
-          <div class="field"><label>Markup (multiplicador)</label><input type="number" id="c_markup" step="0.1" min="1" value="3" oninput="calcular()"></div>
+          <div class="field">
+            <label>Precificação</label>
+            <div class="pm-toggle">
+              <button id="pm-markup" class="pm-btn active" onclick="setPricingMode('markup')">Markup ×</button>
+              <button id="pm-margem" class="pm-btn" onclick="setPricingMode('margem')">Margem %</button>
+            </div>
+            <div id="pm-markup-wrap" style="margin-top:5px;"><input type="number" id="c_markup" step="0.1" min="1" value="3" oninput="calcular()" style="width:100%;"></div>
+            <div id="pm-margem-wrap" style="display:none;margin-top:5px;">
+              <input type="number" id="c_margem_pct" step="1" min="1" max="99" value="60" oninput="calcular()" style="width:100%;">
+              <div style="font-size:11px;color:var(--t3);margin-top:3px;" id="pm-equiv"></div>
+            </div>
+          </div>
           <div class="field"><label>Unidades previstas / mês</label><input type="number" id="c_unidades_mes" step="1" min="1" value="40" oninput="calcular()"></div>
         </div>
       </div>
@@ -489,7 +505,7 @@ select{cursor:pointer;}
           <div class="rt-value" id="r_custo_un">R$ 0,00</div>
         </div>
         <div style="text-align:center;font-size:12.5px;color:var(--t2);">
-          Preço base (custo × markup)
+          <span id="r_preco_label">Preço base (custo × markup)</span>
           <div style="font-size:18px;font-weight:800;color:var(--blue);margin-top:2px;font-variant-numeric:tabular-nums;" id="r_preco_base">R$ 0,00</div>
         </div>
       </div>
@@ -775,6 +791,7 @@ let D={
 let editingProduct=null;
 let currentImage=null;
 let _syncDone=false;
+let _pricingMode='markup';
 
 function _hasRealData(d) {
   return d && ((d.materiais||[]).length>0 || (d.impressoras||[]).length>0 || (d.catalog||[]).length>0 || (d.embalagens_catalog||[]).length>0);
@@ -1080,17 +1097,29 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
 // ==================== CALCULATOR ====================
+function setPricingMode(mode){
+  _pricingMode=mode;
+  document.getElementById('pm-markup').classList.toggle('active',mode==='markup');
+  document.getElementById('pm-margem').classList.toggle('active',mode==='margem');
+  document.getElementById('pm-markup-wrap').style.display=mode==='markup'?'':'none';
+  document.getElementById('pm-margem-wrap').style.display=mode==='margem'?'':'none';
+  calcular();
+}
+
 function calcInputs(){
+  const margem_pct=Math.min(99,Math.max(1,n('c_margem_pct')||60));
+  const markup=_pricingMode==='margem'?1/(1-margem_pct/100):Math.max(1,n('c_markup'));
   return{
     tempo:n('c_tempo_h')+(n('c_tempo_m')/60),peso:n('c_peso'),qtd:Math.max(1,n('c_qtd')),
-    falhas:n('c_falhas'),markup:Math.max(1,n('c_markup')),unidades:Math.max(1,n('c_unidades_mes')),
+    falhas:n('c_falhas'),markup,unidades:Math.max(1,n('c_unidades_mes')),
     matId:parseInt(document.getElementById('c_material')?.value)||null,
     impId:parseInt(document.getElementById('c_impressora')?.value)||null,
+    pricing_mode:_pricingMode,margem_alvo:_pricingMode==='margem'?margem_pct:null,
   };
 }
 
 function calcular(){
-  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId}=calcInputs();
+  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId,margem_alvo}=calcInputs();
   const mat=D.materiais.find(m=>m.id===matId);
   const imp=D.impressoras.find(p=>p.id===impId);
   const kwh=D.custos.kwh||0.84;
@@ -1114,13 +1143,19 @@ function calcular(){
   set('r_custo_info',`${qtd} na mesa → total ${R(custo_un*qtd)}`);
   set('r_preco_base',R(preco_base));
   set('emb-total',R(emb));
+  if(_pricingMode==='margem'&&margem_alvo){
+    set('r_preco_label',`Preço base (margem alvo ${margem_alvo.toFixed(0)}%)`);
+    set('pm-equiv',`≡ markup ${markup.toFixed(2)}×`);
+  } else {
+    set('r_preco_label','Preço base (custo × markup)');
+  }
   updateCustosSummary(fixo_total,D.custos.solar||0,fixo_liq,c_fixo,unidades);
-  renderMpResults(custo_un,preco_base);
+  renderMpResults(custo_un,preco_base,tempo);
 }
 
 function calcEmbTotal(){return D.embItems.reduce((s,i)=>s+((i.qty||0)*(i.custo_un||0)),0);}
 
-function renderMpResults(custo_un,preco_base){
+function renderMpResults(custo_un,preco_base,tempo=0){
   const c=document.getElementById('mp-results');
   const ativos=D.marketplaces.filter(m=>m.ativo);
   if(!ativos.length){c.innerHTML='<div style="text-align:center;color:var(--t3);padding:16px 0;font-size:13px;">Nenhum canal ativo</div>';return;}
@@ -1131,6 +1166,7 @@ function renderMpResults(custo_un,preco_base){
     const lucro_bruto=preco-custo_un;
     const lucro_liq=preco-deducoes-custo_un;
     const margem=preco>0?(lucro_liq/preco*100):0;
+    const lucro_h=tempo>0?lucro_liq/tempo:null;
     const chips=[];
     if(mp.comissao>0)chips.push(`Comissão ${mp.comissao}%: -${R(preco*mp.comissao/100)}`);
     if(mp.cartao>0)chips.push(`Cartão ${mp.cartao}%: -${R(preco*mp.cartao/100)}`);
@@ -1139,6 +1175,7 @@ function renderMpResults(custo_un,preco_base){
     if(mp.taxa_fixa>0)chips.push(`Taxa fixa: -${R(mp.taxa_fixa)}`);
     const liqColor=lucro_liq>=0?'var(--green)':'var(--red)';
     const liqBg=lucro_liq>=0?'var(--green-s)':'var(--red-s)';
+    const lhColor=lucro_h!==null&&lucro_h>=0?'var(--green)':'var(--red)';
     return`<div class="mp-result">
       <div class="mp-result-hdr">
         <div><div class="mp-name">${esc(mp.nome)}</div><div class="mp-fees-info">${(soma*100).toFixed(0)}% em taxas${mp.taxa_fixa>0?` + taxa fixa ${R(mp.taxa_fixa)}`:''}</div></div>
@@ -1149,6 +1186,7 @@ function renderMpResults(custo_un,preco_base){
         <div class="mp-profit bruto"><div class="pp-l">Lucro Bruto</div><div class="pp-v">${R(lucro_bruto)}</div></div>
         <div class="mp-profit liquido" style="background:${liqBg}"><div class="pp-l">Lucro Líquido</div><div class="pp-v" style="color:${liqColor}">${R(lucro_liq)}</div></div>
         <div class="mp-profit margem"><div class="pp-l">Margem</div><div class="pp-v">${margem.toFixed(1)}%</div></div>
+        <div class="mp-profit lph"><div class="pp-l">Lucro/hora</div><div class="pp-v" style="color:${lhColor}">${lucro_h!==null?R(lucro_h):'—'}</div></div>
       </div>
     </div>`;
   }).join('');
@@ -1453,7 +1491,7 @@ function applyEmbRec(catalogId){
 
 // ==================== PRODUCT ====================
 function getFormData(){
-  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId}=calcInputs();
+  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId,pricing_mode,margem_alvo}=calcInputs();
   const mat=D.materiais.find(m=>m.id===matId);
   const imp=D.impressoras.find(p=>p.id===impId);
   const kwh=D.custos.kwh||0.84;
@@ -1478,7 +1516,7 @@ function getFormData(){
     image:currentImage,
     materialId:matId,materialNome:mat?mat.nome:'—',
     impressoraId:impId,impressoraNome:imp?imp.nome:'—',
-    tempo,peso,qtd,falhas,markup,unidades_mes:unidades,
+    tempo,peso,qtd,falhas,markup,pricing_mode,margem_alvo,unidades_mes:unidades,
     embalagens:JSON.parse(JSON.stringify(D.embItems)),
     custo_un,preco_base,mp_prices,
   };
@@ -1516,6 +1554,12 @@ function loadProduct(id){
   document.getElementById('c_qtd').value=p.qtd||1;
   document.getElementById('c_falhas').value=p.falhas||10;
   document.getElementById('c_markup').value=p.markup||3;
+  if(p.pricing_mode==='margem'&&p.margem_alvo){
+    document.getElementById('c_margem_pct').value=p.margem_alvo;
+    setPricingMode('margem');
+  } else {
+    setPricingMode('markup');
+  }
   document.getElementById('c_unidades_mes').value=p.unidades_mes||40;
   D.embItems=JSON.parse(JSON.stringify(p.embalagens||[]));
   renderEmbRows();updateSelects();
@@ -1540,6 +1584,8 @@ function clearProduct(){
   document.getElementById('c_qtd').value=1;
   document.getElementById('c_falhas').value=10;
   document.getElementById('c_markup').value=3;
+  document.getElementById('c_margem_pct').value=60;
+  setPricingMode('markup');
   D.embItems=[];
   renderEmbRows();updateProductIndicator();calcular();
 }
@@ -1612,7 +1658,14 @@ function renderCatalog(){
         if(!preco)return`<td style="color:var(--t3);">—</td>`;
         const mp=D.marketplaces.find(m=>m.nome===mn);
         let margemHtml='';
-        if(mp){const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;const ll=preco-(preco*soma+mp.taxa_fixa)-p.custo_un;const mg=preco>0?(ll/preco*100):0;const mc=mg>=0?'var(--green)':'var(--red)';margemHtml=`<div style="font-size:11px;color:${mc};font-weight:500;">${mg.toFixed(1)}%</div>`;}
+        if(mp){
+          const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+          const ll=preco-(preco*soma+mp.taxa_fixa)-p.custo_un;
+          const mg=preco>0?(ll/preco*100):0;
+          const mc=mg>=0?'var(--green)':'var(--red)';
+          margemHtml=`<div style="font-size:11px;color:${mc};font-weight:500;">${mg.toFixed(1)}%</div>`;
+          if(p.tempo>0){const lph=ll/p.tempo;margemHtml+=`<div style="font-size:10px;color:${mc};">${R(lph)}/h</div>`;}
+        }
         return`<td style="color:var(--green);font-weight:600;font-variant-numeric:tabular-nums;">${R(preco)}${margemHtml}</td>`;
       }).join('')}
       <td style="color:var(--t3);font-size:12px;white-space:nowrap;">${fmtDate(p.updatedAt||p.savedAt)}</td>
