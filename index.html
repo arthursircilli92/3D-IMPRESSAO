@@ -145,9 +145,11 @@ select{cursor:pointer;}
 .mp-profit.margem .pp-v{color:var(--blue);}
 .mp-profit.lph{background:var(--surface2);}
 .mp-profit.lph .pp-v{color:var(--t1);}
-.pm-toggle{display:flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;margin-top:4px;}
-.pm-btn{flex:1;padding:4px 0;font-size:12px;font-weight:500;background:var(--surface);border:none;cursor:pointer;color:var(--t2);transition:all .12s;}
-.pm-btn.active{background:var(--blue);color:#fff;}
+/* catalog filter bar */
+.cat-filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;padding:10px 13px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);}
+.cat-filter-bar label{font-size:12px;color:var(--t2);white-space:nowrap;}
+.cat-filter-bar select,.cat-filter-bar input[type=number]{font-size:12px;padding:4px 7px;height:28px;}
+.cat-filter-bar .filter-group{display:flex;align-items:center;gap:5px;}
 
 /* TABLE */
 .tbl{width:100%;border-collapse:collapse;}
@@ -459,18 +461,7 @@ select{cursor:pointer;}
         <div class="card-title" style="margin-bottom:13px">Ajustes de Cálculo</div>
         <div class="g3">
           <div class="field"><label>Taxa de Falhas (%)</label><input type="number" id="c_falhas" step="1" min="0" max="50" value="10" oninput="calcular()"></div>
-          <div class="field">
-            <label>Precificação</label>
-            <div class="pm-toggle">
-              <button id="pm-markup" class="pm-btn active" onclick="setPricingMode('markup')">Markup ×</button>
-              <button id="pm-margem" class="pm-btn" onclick="setPricingMode('margem')">Margem %</button>
-            </div>
-            <div id="pm-markup-wrap" style="margin-top:5px;"><input type="number" id="c_markup" step="0.1" min="1" value="3" oninput="calcular()" style="width:100%;"></div>
-            <div id="pm-margem-wrap" style="display:none;margin-top:5px;">
-              <input type="number" id="c_margem_pct" step="1" min="1" max="99" value="60" oninput="calcular()" style="width:100%;">
-              <div style="font-size:11px;color:var(--t3);margin-top:3px;" id="pm-equiv"></div>
-            </div>
-          </div>
+          <div class="field"><label>Markup (multiplicador)</label><input type="number" id="c_markup" step="0.1" min="1" value="3" oninput="calcular()"></div>
           <div class="field"><label>Unidades previstas / mês</label><input type="number" id="c_unidades_mes" step="1" min="1" value="40" oninput="calcular()"></div>
         </div>
       </div>
@@ -505,7 +496,7 @@ select{cursor:pointer;}
           <div class="rt-value" id="r_custo_un">R$ 0,00</div>
         </div>
         <div style="text-align:center;font-size:12.5px;color:var(--t2);">
-          <span id="r_preco_label">Preço base (custo × markup)</span>
+          Preço base (custo × markup)
           <div style="font-size:18px;font-weight:800;color:var(--blue);margin-top:2px;font-variant-numeric:tabular-nums;" id="r_preco_base">R$ 0,00</div>
         </div>
       </div>
@@ -541,6 +532,41 @@ select{cursor:pointer;}
       Nova Peça
     </button>
   </div>
+  <!-- FILTER BAR -->
+  <div class="cat-filter-bar" id="cat-filter-bar">
+    <div class="filter-group">
+      <label>Ordenar por</label>
+      <select id="cf-sort" onchange="renderCatalog()">
+        <option value="">— Padrão —</option>
+        <option value="lph">Lucro/hora</option>
+        <option value="margem">Margem</option>
+        <option value="custo">Custo</option>
+        <option value="tempo">Tempo</option>
+        <option value="peso">Peso</option>
+      </select>
+      <select id="cf-order" onchange="renderCatalog()">
+        <option value="desc">↓ Maior</option>
+        <option value="asc">↑ Menor</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Material</label>
+      <select id="cf-mat" onchange="renderCatalog()"><option value="">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Impressora</label>
+      <select id="cf-imp" onchange="renderCatalog()"><option value="">Todas</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Tempo máx (h)</label>
+      <input type="number" id="cf-tempo" step="0.5" min="0" placeholder="—" oninput="renderCatalog()" style="width:70px;">
+    </div>
+    <div class="filter-group">
+      <label><input type="checkbox" id="cf-abaixo" onchange="renderCatalog()" style="margin-right:4px;">Abaixo da meta</label>
+    </div>
+    <button class="btn btn-outline btn-xs" onclick="resetCatFilters()">Limpar</button>
+  </div>
+
   <!-- BULK EDIT BAR -->
   <div class="bulk-bar" id="bulk-bar">
     <span class="bulk-count" id="bulk-count">0 selecionados</span>
@@ -696,7 +722,7 @@ select{cursor:pointer;}
     </div>
     <div style="overflow-x:auto;">
       <table class="tbl">
-        <thead><tr><th>Canal</th><th>Comissão %</th><th>Taxa Cartão %</th><th>Anúncio %</th><th>Imposto %</th><th>Taxa Fixa R$</th><th>Ativo</th><th></th></tr></thead>
+        <thead><tr><th>Canal</th><th>Comissão %</th><th>Taxa Cartão %</th><th>Anúncio %</th><th>Imposto %</th><th>Taxa Fixa R$</th><th>Meta Margem %</th><th>Ativo</th><th></th></tr></thead>
         <tbody id="mp-body"></tbody>
       </table>
     </div>
@@ -791,7 +817,6 @@ let D={
 let editingProduct=null;
 let currentImage=null;
 let _syncDone=false;
-let _pricingMode='markup';
 
 function _hasRealData(d) {
   return d && ((d.materiais||[]).length>0 || (d.impressoras||[]).length>0 || (d.catalog||[]).length>0 || (d.embalagens_catalog||[]).length>0);
@@ -1097,29 +1122,17 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
 // ==================== CALCULATOR ====================
-function setPricingMode(mode){
-  _pricingMode=mode;
-  document.getElementById('pm-markup').classList.toggle('active',mode==='markup');
-  document.getElementById('pm-margem').classList.toggle('active',mode==='margem');
-  document.getElementById('pm-markup-wrap').style.display=mode==='markup'?'':'none';
-  document.getElementById('pm-margem-wrap').style.display=mode==='margem'?'':'none';
-  calcular();
-}
-
 function calcInputs(){
-  const margem_pct=Math.min(99,Math.max(1,n('c_margem_pct')||60));
-  const markup=_pricingMode==='margem'?1/(1-margem_pct/100):Math.max(1,n('c_markup'));
   return{
     tempo:n('c_tempo_h')+(n('c_tempo_m')/60),peso:n('c_peso'),qtd:Math.max(1,n('c_qtd')),
-    falhas:n('c_falhas'),markup,unidades:Math.max(1,n('c_unidades_mes')),
+    falhas:n('c_falhas'),markup:Math.max(1,n('c_markup')),unidades:Math.max(1,n('c_unidades_mes')),
     matId:parseInt(document.getElementById('c_material')?.value)||null,
     impId:parseInt(document.getElementById('c_impressora')?.value)||null,
-    pricing_mode:_pricingMode,margem_alvo:_pricingMode==='margem'?margem_pct:null,
   };
 }
 
 function calcular(){
-  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId,margem_alvo}=calcInputs();
+  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId}=calcInputs();
   const mat=D.materiais.find(m=>m.id===matId);
   const imp=D.impressoras.find(p=>p.id===impId);
   const kwh=D.custos.kwh||0.84;
@@ -1143,12 +1156,6 @@ function calcular(){
   set('r_custo_info',`${qtd} na mesa → total ${R(custo_un*qtd)}`);
   set('r_preco_base',R(preco_base));
   set('emb-total',R(emb));
-  if(_pricingMode==='margem'&&margem_alvo){
-    set('r_preco_label',`Preço base (margem alvo ${margem_alvo.toFixed(0)}%)`);
-    set('pm-equiv',`≡ markup ${markup.toFixed(2)}×`);
-  } else {
-    set('r_preco_label','Preço base (custo × markup)');
-  }
   updateCustosSummary(fixo_total,D.custos.solar||0,fixo_liq,c_fixo,unidades);
   renderMpResults(custo_un,preco_base,tempo);
 }
@@ -1173,19 +1180,22 @@ function renderMpResults(custo_un,preco_base,tempo=0){
     if(mp.anuncio>0)chips.push(`Anúncio ${mp.anuncio}%: -${R(preco*mp.anuncio/100)}`);
     if(mp.imposto>0)chips.push(`Imposto ${mp.imposto}%: -${R(preco*mp.imposto/100)}`);
     if(mp.taxa_fixa>0)chips.push(`Taxa fixa: -${R(mp.taxa_fixa)}`);
+    const meta=mp.margem_desejada!=null?mp.margem_desejada:30;
     const liqColor=lucro_liq>=0?'var(--green)':'var(--red)';
     const liqBg=lucro_liq>=0?'var(--green-s)':'var(--red-s)';
+    const mColor=margem>=meta?'var(--green)':'var(--red)';
+    const mBg=margem>=meta?'var(--green-s)':'var(--red-s)';
     const lhColor=lucro_h!==null&&lucro_h>=0?'var(--green)':'var(--red)';
     return`<div class="mp-result">
       <div class="mp-result-hdr">
-        <div><div class="mp-name">${esc(mp.nome)}</div><div class="mp-fees-info">${(soma*100).toFixed(0)}% em taxas${mp.taxa_fixa>0?` + taxa fixa ${R(mp.taxa_fixa)}`:''}</div></div>
+        <div><div class="mp-name">${esc(mp.nome)}</div><div class="mp-fees-info">${(soma*100).toFixed(0)}% em taxas${mp.taxa_fixa>0?` + taxa fixa ${R(mp.taxa_fixa)}`:''} · meta ${meta}%</div></div>
         <div><div class="mp-price-lbl">Preço sugerido</div><div class="mp-price">${R(preco)}</div></div>
       </div>
       <div class="mp-fee-row">${chips.map(f=>`<span class="mp-chip">${f}</span>`).join('')}</div>
       <div class="mp-profits">
         <div class="mp-profit bruto"><div class="pp-l">Lucro Bruto</div><div class="pp-v">${R(lucro_bruto)}</div></div>
         <div class="mp-profit liquido" style="background:${liqBg}"><div class="pp-l">Lucro Líquido</div><div class="pp-v" style="color:${liqColor}">${R(lucro_liq)}</div></div>
-        <div class="mp-profit margem"><div class="pp-l">Margem</div><div class="pp-v">${margem.toFixed(1)}%</div></div>
+        <div class="mp-profit margem" style="background:${mBg}"><div class="pp-l">Margem</div><div class="pp-v" style="color:${mColor}">${margem.toFixed(1)}%</div></div>
         <div class="mp-profit lph"><div class="pp-l">Lucro/hora</div><div class="pp-v" style="color:${lhColor}">${lucro_h!==null?R(lucro_h):'—'}</div></div>
       </div>
     </div>`;
@@ -1491,7 +1501,7 @@ function applyEmbRec(catalogId){
 
 // ==================== PRODUCT ====================
 function getFormData(){
-  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId,pricing_mode,margem_alvo}=calcInputs();
+  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId}=calcInputs();
   const mat=D.materiais.find(m=>m.id===matId);
   const imp=D.impressoras.find(p=>p.id===impId);
   const kwh=D.custos.kwh||0.84;
@@ -1516,7 +1526,7 @@ function getFormData(){
     image:currentImage,
     materialId:matId,materialNome:mat?mat.nome:'—',
     impressoraId:impId,impressoraNome:imp?imp.nome:'—',
-    tempo,peso,qtd,falhas,markup,pricing_mode,margem_alvo,unidades_mes:unidades,
+    tempo,peso,qtd,falhas,markup,unidades_mes:unidades,
     embalagens:JSON.parse(JSON.stringify(D.embItems)),
     custo_un,preco_base,mp_prices,
   };
@@ -1554,12 +1564,6 @@ function loadProduct(id){
   document.getElementById('c_qtd').value=p.qtd||1;
   document.getElementById('c_falhas').value=p.falhas||10;
   document.getElementById('c_markup').value=p.markup||3;
-  if(p.pricing_mode==='margem'&&p.margem_alvo){
-    document.getElementById('c_margem_pct').value=p.margem_alvo;
-    setPricingMode('margem');
-  } else {
-    setPricingMode('markup');
-  }
   document.getElementById('c_unidades_mes').value=p.unidades_mes||40;
   D.embItems=JSON.parse(JSON.stringify(p.embalagens||[]));
   renderEmbRows();updateSelects();
@@ -1584,8 +1588,6 @@ function clearProduct(){
   document.getElementById('c_qtd').value=1;
   document.getElementById('c_falhas').value=10;
   document.getElementById('c_markup').value=3;
-  document.getElementById('c_margem_pct').value=60;
-  setPricingMode('markup');
   D.embItems=[];
   renderEmbRows();updateProductIndicator();calcular();
 }
@@ -1610,9 +1612,74 @@ function updateProductIndicator(){
 }
 
 // ==================== CATALOG ====================
+function _bestMpStat(p,stat){
+  // returns best (highest) lucro/hora or margem across active marketplaces
+  let best=-Infinity;
+  D.marketplaces.filter(m=>m.ativo).forEach(mp=>{
+    const preco=p.mp_prices&&p.mp_prices[mp.nome];if(!preco)return;
+    const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+    const ll=preco-(preco*soma+mp.taxa_fixa)-p.custo_un;
+    const mg=preco>0?(ll/preco*100):0;
+    const val=stat==='lph'&&p.tempo>0?ll/p.tempo:stat==='margem'?mg:0;
+    if(val>best)best=val;
+  });
+  return best===-Infinity?0:best;
+}
+function _abaixoMeta(p){
+  return D.marketplaces.filter(m=>m.ativo).some(mp=>{
+    const preco=p.mp_prices&&p.mp_prices[mp.nome];if(!preco)return false;
+    const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+    const ll=preco-(preco*soma+mp.taxa_fixa)-p.custo_un;
+    const mg=preco>0?(ll/preco*100):0;
+    const meta=mp.margem_desejada!=null?mp.margem_desejada:30;
+    return mg<meta;
+  });
+}
+function resetCatFilters(){
+  ['cf-sort','cf-order','cf-mat','cf-imp'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=el.id==='cf-order'?'desc':'';});
+  const t=document.getElementById('cf-tempo');if(t)t.value='';
+  const a=document.getElementById('cf-abaixo');if(a)a.checked=false;
+  renderCatalog();
+}
+function _updateCatFilterSelects(){
+  const mats=[...new Set(D.catalog.map(p=>p.materialNome).filter(Boolean))].sort();
+  const imps=[...new Set(D.catalog.map(p=>p.impressoraNome).filter(Boolean))].sort();
+  const matSel=document.getElementById('cf-mat');
+  const impSel=document.getElementById('cf-imp');
+  if(matSel){const v=matSel.value;matSel.innerHTML='<option value="">Todos</option>'+mats.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');matSel.value=v;}
+  if(impSel){const v=impSel.value;impSel.innerHTML='<option value="">Todas</option>'+imps.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');impSel.value=v;}
+}
 function renderCatalog(){
+  _updateCatFilterSelects();
   const q=(document.getElementById('cat-search')?.value||'').toLowerCase();
-  const list=D.catalog.filter(p=>!q||p.code.toLowerCase().includes(q)||p.nome.toLowerCase().includes(q));
+  const sortBy=document.getElementById('cf-sort')?.value||'';
+  const order=document.getElementById('cf-order')?.value||'desc';
+  const matF=document.getElementById('cf-mat')?.value||'';
+  const impF=document.getElementById('cf-imp')?.value||'';
+  const tempoMax=parseFloat(document.getElementById('cf-tempo')?.value)||0;
+  const abaixo=document.getElementById('cf-abaixo')?.checked||false;
+
+  let list=D.catalog.filter(p=>{
+    if(q&&!p.code.toLowerCase().includes(q)&&!p.nome.toLowerCase().includes(q))return false;
+    if(matF&&p.materialNome!==matF)return false;
+    if(impF&&p.impressoraNome!==impF)return false;
+    if(tempoMax>0&&(p.tempo||0)>tempoMax)return false;
+    if(abaixo&&!_abaixoMeta(p))return false;
+    return true;
+  });
+
+  if(sortBy){
+    list=[...list].sort((a,b)=>{
+      let va,vb;
+      if(sortBy==='lph'){va=_bestMpStat(a,'lph');vb=_bestMpStat(b,'lph');}
+      else if(sortBy==='margem'){va=_bestMpStat(a,'margem');vb=_bestMpStat(b,'margem');}
+      else if(sortBy==='custo'){va=a.custo_un||0;vb=b.custo_un||0;}
+      else if(sortBy==='tempo'){va=a.tempo||0;vb=b.tempo||0;}
+      else if(sortBy==='peso'){va=a.peso||0;vb=b.peso||0;}
+      return order==='asc'?va-vb:vb-va;
+    });
+  }
+
   set('cat-total',D.catalog.length);
   if(D.catalog.length){
     const ac=D.catalog.reduce((s,p)=>s+p.custo_un,0)/D.catalog.length;
@@ -1657,16 +1724,19 @@ function renderCatalog(){
         const preco=p.mp_prices&&p.mp_prices[mn];
         if(!preco)return`<td style="color:var(--t3);">—</td>`;
         const mp=D.marketplaces.find(m=>m.nome===mn);
-        let margemHtml='';
+        let extra='';
+        let precoColor='var(--green)';
         if(mp){
           const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
           const ll=preco-(preco*soma+mp.taxa_fixa)-p.custo_un;
           const mg=preco>0?(ll/preco*100):0;
-          const mc=mg>=0?'var(--green)':'var(--red)';
-          margemHtml=`<div style="font-size:11px;color:${mc};font-weight:500;">${mg.toFixed(1)}%</div>`;
-          if(p.tempo>0){const lph=ll/p.tempo;margemHtml+=`<div style="font-size:10px;color:${mc};">${R(lph)}/h</div>`;}
+          const meta=mp.margem_desejada!=null?mp.margem_desejada:30;
+          const mc=mg>=meta?'var(--green)':'var(--red)';
+          precoColor=mc;
+          extra=`<div style="font-size:11px;color:${mc};font-weight:500;">${mg.toFixed(1)}%</div>`;
+          if(p.tempo>0){const lph=ll/p.tempo;extra+=`<div style="font-size:10px;color:${mc};">${R(lph)}/h</div>`;}
         }
-        return`<td style="color:var(--green);font-weight:600;font-variant-numeric:tabular-nums;">${R(preco)}${margemHtml}</td>`;
+        return`<td style="color:${precoColor};font-weight:600;font-variant-numeric:tabular-nums;">${R(preco)}${extra}</td>`;
       }).join('')}
       <td style="color:var(--t3);font-size:12px;white-space:nowrap;">${fmtDate(p.updatedAt||p.savedAt)}</td>
       <td style="text-align:center;white-space:nowrap;">
@@ -2031,13 +2101,14 @@ function renderMarketplaces(){
       <td><input type="number" value="${mp.anuncio||0}" step="0.1" min="0" max="100" oninput="D.marketplaces[${i}].anuncio=parseFloat(this.value)||0;save();calcular()"></td>
       <td><input type="number" value="${mp.imposto||0}" step="0.1" min="0" max="100" oninput="D.marketplaces[${i}].imposto=parseFloat(this.value)||0;save();calcular()"></td>
       <td><input type="number" value="${mp.taxa_fixa||0}" step="0.01" min="0" oninput="D.marketplaces[${i}].taxa_fixa=parseFloat(this.value)||0;save();calcular()"></td>
+      <td><input type="number" value="${mp.margem_desejada!=null?mp.margem_desejada:30}" step="1" min="0" max="99" oninput="D.marketplaces[${i}].margem_desejada=parseFloat(this.value)||0;save();calcular();renderCatalog();" style="width:64px;"></td>
       <td style="text-align:center;"><input type="checkbox" ${mp.ativo?'checked':''} onchange="D.marketplaces[${i}].ativo=this.checked;save();calcular()"></td>
       <td><button class="btn btn-danger btn-xs" onclick="D.marketplaces.splice(${i},1);renderMarketplaces();save();calcular();">Remover</button></td>
     </tr>`).join('');
 }
 function addMarketplace(){
   const id=(D.marketplaces.reduce((mx,m)=>Math.max(mx,m.id||0),0))+1;
-  D.marketplaces.push({id,nome:'Novo Canal',comissao:0,cartao:0,anuncio:0,imposto:0,taxa_fixa:0,ativo:true});
+  D.marketplaces.push({id,nome:'Novo Canal',comissao:0,cartao:0,anuncio:0,imposto:0,taxa_fixa:0,margem_desejada:30,ativo:true});
   renderMarketplaces();save();
 }
 
