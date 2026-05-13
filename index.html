@@ -133,7 +133,7 @@ select{cursor:pointer;}
 .mp-price-lbl{font-size:10px;color:var(--t3);text-align:right;}
 .mp-fee-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px;}
 .mp-chip{background:var(--red-s);color:var(--red);border:1px solid var(--red-b);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:500;}
-.mp-profits{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.mp-profits{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
 .mp-profit{border-radius:5px;padding:7px 8px;text-align:center;}
 .pp-l{font-size:10px;color:var(--t3);margin-bottom:1px;}
 .pp-v{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;}
@@ -472,9 +472,8 @@ select{cursor:pointer;}
 
       <div class="card">
         <div class="card-title" style="margin-bottom:13px">Ajustes de Cálculo</div>
-        <div class="g3">
+        <div class="g2">
           <div class="field"><label>Taxa de Falhas (%)</label><input type="number" id="c_falhas" step="1" min="0" max="50" value="10" oninput="calcular()"></div>
-          <div class="field"><label>Markup (multiplicador)</label><input type="number" id="c_markup" step="0.1" min="1" value="3" oninput="calcular()"></div>
           <div class="field"><label>Unidades previstas / mês</label><input type="number" id="c_unidades_mes" step="1" min="1" value="40" oninput="calcular()"></div>
         </div>
       </div>
@@ -508,10 +507,6 @@ select{cursor:pointer;}
           <div><div class="rt-label">Custo Unitário</div><div class="rt-sub" id="r_custo_info">—</div></div>
           <div class="rt-value" id="r_custo_un">R$ 0,00</div>
         </div>
-        <div style="text-align:center;font-size:12.5px;color:var(--t2);">
-          Preço base (custo × markup)
-          <div style="font-size:18px;font-weight:800;color:var(--blue);margin-top:2px;font-variant-numeric:tabular-nums;" id="r_preco_base">R$ 0,00</div>
-        </div>
         <div id="r-warnings" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;"></div>
       </div>
 
@@ -530,7 +525,7 @@ select{cursor:pointer;}
   <div class="cat-stats">
     <div class="stat-box"><div class="stat-val" id="cat-total">0</div><div class="stat-lbl">Peças no catálogo</div></div>
     <div class="stat-box"><div class="stat-val" id="cat-avg-c">—</div><div class="stat-lbl">Custo médio</div></div>
-    <div class="stat-box"><div class="stat-val" id="cat-avg-p">—</div><div class="stat-lbl">Preço base médio</div></div>
+    <div class="stat-box"><div class="stat-val" id="cat-avg-p">—</div><div class="stat-lbl">Com preço praticado</div></div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:12px;">
     <div class="si-wrap" style="flex:1;">
@@ -591,7 +586,6 @@ select{cursor:pointer;}
     <span class="bulk-sep"></span>
     <select id="bulk-prop" style="font-size:13px;" onchange="updateBulkInput()">
       <option value="">— Propriedade —</option>
-      <option value="markup">Markup (×)</option>
       <option value="falhas">Taxa de Falha (%)</option>
       <option value="unidades_mes">Unidades/mês previstas</option>
       <option value="materialId">Material</option>
@@ -606,8 +600,8 @@ select{cursor:pointer;}
   <div class="card" style="padding:0;overflow:hidden;">
     <div style="overflow-x:auto;">
       <table class="tbl" id="cat-table">
-        <thead><tr><th>Código</th><th>Nome</th><th>STL</th><th>Material</th><th>Tempo</th><th>Peso</th><th>Custo Un.</th><th>Preço Base</th><th>Atualizado</th><th style="text-align:center">Ações</th></tr></thead>
-        <tbody id="cat-body"><tr><td colspan="10" style="text-align:center;color:var(--t3);padding:28px;">Nenhuma peça salva ainda.</td></tr></tbody>
+        <thead><tr><th>Código</th><th>Nome</th><th>Material</th><th>Tempo</th><th>Peso</th><th>Custo Un.</th><th style="text-align:center">Ações</th></tr></thead>
+        <tbody id="cat-body"><tr><td colspan="99" style="text-align:center;color:var(--t3);padding:28px;">Nenhuma peça salva ainda.</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -746,8 +740,8 @@ select{cursor:pointer;}
     </div>
   </div>
   <div class="info-box" style="margin-top:12px;">
-    <strong>Fórmula do preço:</strong> Preço = (Preço Base + Taxa Fixa) ÷ (1 − soma das % de taxas)<br>
-    <span style="font-size:12px;opacity:.8;">Garante que após as deduções, você receba exatamente o Preço Base desejado.</span>
+    <strong>Fórmula do preço sugerido:</strong> Preço = (Custo Un. + Taxa Fixa) ÷ (1 − taxas% − margem%)<br>
+    <span style="font-size:12px;opacity:.8;">Garante que após todas as deduções, você atinja exatamente a margem desejada de cada canal.</span>
   </div>
 </div>
 
@@ -1145,14 +1139,14 @@ function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 function calcInputs(){
   return{
     tempo:n('c_tempo_h')+(n('c_tempo_m')/60),peso:n('c_peso'),qtd:Math.max(1,n('c_qtd')),
-    falhas:n('c_falhas'),markup:Math.max(1,n('c_markup')),unidades:Math.max(1,n('c_unidades_mes')),
+    falhas:n('c_falhas'),unidades:Math.max(1,n('c_unidades_mes')),
     matId:parseInt(document.getElementById('c_material')?.value)||null,
     impId:parseInt(document.getElementById('c_impressora')?.value)||null,
   };
 }
 
 function calcular(){
-  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId}=calcInputs();
+  const{tempo,peso,qtd,falhas,unidades,matId,impId}=calcInputs();
   const mat=D.materiais.find(m=>m.id===matId);
   const imp=D.impressoras.find(p=>p.id===impId);
   const kwh=D.custos.kwh||0.84;
@@ -1168,13 +1162,11 @@ function calcular(){
   const sub=c_mat+c_ener+c_amort+c_emb+c_fixo;
   const c_falha=sub*(falhas/100);
   const custo_un=sub+c_falha;
-  const preco_base=custo_un*markup;
 
   set('r_mat',R(c_mat));set('r_ener',R(c_ener));set('r_amort',R(c_amort));
   set('r_emb',R(c_emb));set('r_fixo',R(c_fixo));set('r_falha',R(c_falha));
   set('r_custo_un',R(custo_un));
   set('r_custo_info',`${qtd} na mesa → total ${R(custo_un*qtd)}`);
-  set('r_preco_base',R(preco_base));
   _lastCustoUn=custo_un;
   const warns=[];
   if(!matId)warns.push('Material não selecionado — custo de filamento não incluído');
@@ -1183,7 +1175,7 @@ function calcular(){
   if(wEl)wEl.innerHTML=warns.map(w=>`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-s);border-radius:5px;padding:5px 9px;text-align:left;">⚠ ${w}</div>`).join('');
   set('emb-total',R(emb));
   updateCustosSummary(fixo_total,D.custos.solar||0,fixo_liq,c_fixo,unidades);
-  renderMpResults(custo_un,preco_base,tempo);
+  renderMpResults(custo_un,tempo);
 }
 
 function calcEmbTotal(){return D.embItems.reduce((s,i)=>s+((i.qty||0)*(i.custo_un||0)),0);}
@@ -1196,8 +1188,8 @@ function _pratInfo(mp,prat,custo_un,tempo){
   const lph=tempo>0?ll/tempo:null;
   const meta=mp.margem_desejada!=null?mp.margem_desejada:30;
   const c=mg>=meta?'var(--green)':'var(--red)';
-  return`<span style="color:${c};font-weight:700;">${mg.toFixed(1)}%</span>`
-    +(lph!==null?`<span style="color:${c};font-size:10px;margin-left:4px;">${R(lph)}/h</span>`:'');
+  return`<div style="color:${c};font-weight:700;">${mg.toFixed(1)}%</div>`
+    +(lph!==null?`<div style="color:${c};font-size:10px;">${R(lph)}/h</div>`:'');
 }
 
 function applyPsico(mpNome,preco){
@@ -1217,20 +1209,56 @@ function updatePraticado(mpNome,val){
   if(el)el.innerHTML=_pratInfo(mp,_praticado[mpNome]||0,_lastCustoUn,_lastTempo);
 }
 
+function updatePraticadoCatalog(prodId,mpNome,val){
+  const p=D.catalog.find(x=>x.id===prodId);
+  if(!p)return;
+  const v=parseFloat(val);
+  if(!p.preco_praticado)p.preco_praticado={};
+  if(v>0)p.preco_praticado[mpNome]=v;else delete p.preco_praticado[mpNome];
+  save();
+  const mp=D.marketplaces.find(m=>m.nome===mpNome);
+  if(!mp)return;
+  const safeId=mpNome.replace(/\W/g,'_');
+  const el=document.getElementById(`cprat-info-${prodId}-${safeId}`);
+  if(el)el.innerHTML=_pratInfo(mp,v>0?v:0,p.custo_un,p.tempo);
+  // update catalog stats
+  const cpCount=D.catalog.filter(x=>x.preco_praticado&&Object.keys(x.preco_praticado).length>0).length;
+  set('cat-avg-p',`${cpCount} / ${D.catalog.length}`);
+}
+
+function usarSugeridoCatalog(prodId,mpNome,preco){
+  const safeId=mpNome.replace(/\W/g,'_');
+  const input=document.getElementById(`cprat-${prodId}-${safeId}`);
+  if(input){input.value=preco.toFixed(2);}
+  updatePraticadoCatalog(prodId,mpNome,preco.toFixed(2));
+}
+
 let _lastTempo=0;
 
-function renderMpResults(custo_un,preco_base,tempo=0){
+function renderMpResults(custo_un,tempo=0){
   _lastTempo=tempo;
   const c=document.getElementById('mp-results');
   const ativos=D.marketplaces.filter(m=>m.ativo);
   if(!ativos.length){c.innerHTML='<div style="text-align:center;color:var(--t3);padding:16px 0;font-size:13px;">Nenhum canal ativo</div>';return;}
   c.innerHTML=ativos.map(mp=>{
     const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
-    const preco=soma<1?(preco_base+mp.taxa_fixa)/(1-soma):preco_base+mp.taxa_fixa;
+    const meta=(mp.margem_desejada!=null?mp.margem_desejada:30);
+    const metaF=meta/100;
+    const denom=1-soma-metaF;
+    const preco=denom>0?(custo_un+mp.taxa_fixa)/denom:null;
+    const safeId=mp.nome.replace(/\W/g,'_');
+    if(preco===null){
+      return`<div class="mp-result">
+        <div class="mp-result-hdr">
+          <div><div class="mp-name">${esc(mp.nome)}</div><div class="mp-fees-info">${(soma*100).toFixed(0)}% em taxas · meta ${meta}%</div></div>
+          <div style="color:var(--red);font-weight:700;font-size:13px;">Meta inatingível</div>
+        </div>
+        <div style="font-size:12px;color:var(--red);background:var(--red-s);border-radius:5px;padding:7px 10px;">Taxas + meta ≥ 100%. Reduza a meta ou as taxas.</div>
+      </div>`;
+    }
     const deducoes=preco*soma+mp.taxa_fixa;
     const lucro_bruto=preco-custo_un;
     const lucro_liq=preco-deducoes-custo_un;
-    const margem=preco>0?(lucro_liq/preco*100):0;
     const lucro_h=tempo>0?lucro_liq/tempo:null;
     const chips=[];
     if(mp.comissao>0)chips.push(`Comissão ${mp.comissao}%: -${R(preco*mp.comissao/100)}`);
@@ -1238,25 +1266,20 @@ function renderMpResults(custo_un,preco_base,tempo=0){
     if(mp.anuncio>0)chips.push(`Anúncio ${mp.anuncio}%: -${R(preco*mp.anuncio/100)}`);
     if(mp.imposto>0)chips.push(`Imposto ${mp.imposto}%: -${R(preco*mp.imposto/100)}`);
     if(mp.taxa_fixa>0)chips.push(`Taxa fixa: -${R(mp.taxa_fixa)}`);
-    const meta=mp.margem_desejada!=null?mp.margem_desejada:30;
     const liqColor=lucro_liq>=0?'var(--green)':'var(--red)';
     const liqBg=lucro_liq>=0?'var(--green-s)':'var(--red-s)';
-    const mColor=margem>=meta?'var(--green)':'var(--red)';
-    const mBg=margem>=meta?'var(--green-s)':'var(--red-s)';
     const lhColor=lucro_h!==null&&lucro_h>=0?'var(--green)':'var(--red)';
     const prat=_praticado[mp.nome]||0;
     const pratInfoHtml=_pratInfo(mp,prat,custo_un,tempo);
-    const safeId=mp.nome.replace(/\W/g,'_');
     return`<div class="mp-result">
       <div class="mp-result-hdr">
         <div><div class="mp-name">${esc(mp.nome)}</div><div class="mp-fees-info">${(soma*100).toFixed(0)}% em taxas${mp.taxa_fixa>0?` + taxa fixa ${R(mp.taxa_fixa)}`:''} · meta ${meta}%</div></div>
-        <div><div class="mp-price-lbl">Preço sugerido</div><div class="mp-price">${R(preco)}</div></div>
+        <div><div class="mp-price-lbl">Preço sugerido (${meta}% margem)</div><div class="mp-price">${R(preco)}</div></div>
       </div>
       <div class="mp-fee-row">${chips.map(f=>`<span class="mp-chip">${f}</span>`).join('')}</div>
       <div class="mp-profits">
         <div class="mp-profit bruto"><div class="pp-l">Lucro Bruto</div><div class="pp-v">${R(lucro_bruto)}</div></div>
         <div class="mp-profit liquido" style="background:${liqBg}"><div class="pp-l">Lucro Líquido</div><div class="pp-v" style="color:${liqColor}">${R(lucro_liq)}</div></div>
-        <div class="mp-profit margem" style="background:${mBg}"><div class="pp-l">Margem sugerida</div><div class="pp-v" style="color:${mColor}">${margem.toFixed(1)}%</div></div>
         <div class="mp-profit lph"><div class="pp-l">Lucro/hora</div><div class="pp-v" style="color:${lhColor}">${lucro_h!==null?R(lucro_h):'—'}</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);">
@@ -1265,12 +1288,21 @@ function renderMpResults(custo_un,preco_base,tempo=0){
           id="prat-input-${safeId}"
           style="width:96px;font-size:12px;padding:3px 7px;height:26px;"
           oninput="updatePraticado('${esc(mp.nome)}',this.value)">
+        <button title="Usar sugerido" style="height:26px;padding:0 8px;font-size:11px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--t2);cursor:pointer;white-space:nowrap;flex-shrink:0;"
+          onclick="usarSugerido('${esc(mp.nome)}',${preco.toFixed(2)})">↗ Usar</button>
         <button title="Arredondar para .90" style="height:26px;padding:0 8px;font-size:11px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--t2);cursor:pointer;white-space:nowrap;flex-shrink:0;"
           onclick="applyPsico('${esc(mp.nome)}',${preco.toFixed(2)})">↓,90</button>
-        <div id="prat-info-${safeId}" style="font-size:12px;display:flex;align-items:center;gap:0;">${pratInfoHtml}</div>
+        <div id="prat-info-${safeId}" style="font-size:12px;">${pratInfoHtml}</div>
       </div>
     </div>`;
   }).join('');
+}
+
+function usarSugerido(mpNome,preco){
+  const safeId=mpNome.replace(/\W/g,'_');
+  const input=document.getElementById('prat-input-'+safeId);
+  if(input){input.value=preco.toFixed(2);}
+  updatePraticado(mpNome,preco.toFixed(2));
 }
 
 // ==================== EMBALAGENS CATALOG ====================
@@ -1572,7 +1604,7 @@ function applyEmbRec(catalogId){
 
 // ==================== PRODUCT ====================
 function getFormData(){
-  const{tempo,peso,qtd,falhas,markup,unidades,matId,impId}=calcInputs();
+  const{tempo,peso,qtd,falhas,unidades,matId,impId}=calcInputs();
   const mat=D.materiais.find(m=>m.id===matId);
   const imp=D.impressoras.find(p=>p.id===impId);
   const kwh=D.custos.kwh||0.84;
@@ -1585,11 +1617,12 @@ function getFormData(){
   const c_fixo=fixo_liq/unidades;
   const sub=c_mat+c_ener+c_amort+c_emb+c_fixo;
   const custo_un=sub+sub*(falhas/100);
-  const preco_base=custo_un*markup;
   const mp_prices={};
   D.marketplaces.filter(m=>m.ativo).forEach(mp=>{
     const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
-    mp_prices[mp.nome]=soma<1?(preco_base+mp.taxa_fixa)/(1-soma):preco_base+mp.taxa_fixa;
+    const meta=(mp.margem_desejada!=null?mp.margem_desejada:30)/100;
+    const denom=1-soma-meta;
+    mp_prices[mp.nome]=denom>0?(custo_un+mp.taxa_fixa)/denom:0;
   });
   return{
     nome:document.getElementById('c_nome').value.trim(),
@@ -1597,13 +1630,13 @@ function getFormData(){
     image:currentImage,
     materialId:matId,materialNome:mat?mat.nome:'—',
     impressoraId:impId,impressoraNome:imp?imp.nome:'—',
-    tempo,peso,qtd,falhas,markup,unidades_mes:unidades,
+    tempo,peso,qtd,falhas,unidades_mes:unidades,
     dim_l:parseFloat(document.getElementById('dim_l')?.value)||0,
     dim_w:parseFloat(document.getElementById('dim_w')?.value)||0,
     dim_h:parseFloat(document.getElementById('dim_h')?.value)||0,
     embalagens:JSON.parse(JSON.stringify(D.embItems)),
     preco_praticado:{..._praticado},
-    custo_un,preco_base,mp_prices,
+    custo_un,mp_prices,
   };
 }
 
@@ -1638,7 +1671,6 @@ function loadProduct(id){
   document.getElementById('c_peso').value=p.peso||0;
   document.getElementById('c_qtd').value=p.qtd||1;
   document.getElementById('c_falhas').value=p.falhas||10;
-  document.getElementById('c_markup').value=p.markup||3;
   document.getElementById('c_unidades_mes').value=p.unidades_mes||40;
   const _setDim=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
   _setDim('dim_l',p.dim_l);_setDim('dim_w',p.dim_w);_setDim('dim_h',p.dim_h);
@@ -1665,7 +1697,6 @@ function clearProduct(){
   document.getElementById('c_peso').value=50;
   document.getElementById('c_qtd').value=1;
   document.getElementById('c_falhas').value=10;
-  document.getElementById('c_markup').value=3;
   D.embItems=[];
   _praticado={};
   renderEmbRows();updateProductIndicator();calcular();
@@ -1692,10 +1723,11 @@ function updateProductIndicator(){
 
 // ==================== CATALOG ====================
 function _bestMpStat(p,stat){
-  // returns best (highest) lucro/hora or margem across active marketplaces
   let best=-Infinity;
   D.marketplaces.filter(m=>m.ativo).forEach(mp=>{
-    const preco=p.mp_prices&&p.mp_prices[mp.nome];if(!preco)return;
+    const prat=p.preco_praticado&&p.preco_praticado[mp.nome];
+    const preco=prat>0?prat:(p.mp_prices&&p.mp_prices[mp.nome]);
+    if(!preco)return;
     const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
     const ll=preco-(preco*soma+mp.taxa_fixa)-p.custo_un;
     const mg=preco>0?(ll/preco*100):0;
@@ -1706,10 +1738,11 @@ function _bestMpStat(p,stat){
 }
 function _abaixoMeta(p){
   return D.marketplaces.filter(m=>m.ativo).some(mp=>{
-    const preco=p.mp_prices&&p.mp_prices[mp.nome];if(!preco)return false;
+    const prat=p.preco_praticado&&p.preco_praticado[mp.nome];
+    if(!prat)return false;
     const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
-    const ll=preco-(preco*soma+mp.taxa_fixa)-p.custo_un;
-    const mg=preco>0?(ll/preco*100):0;
+    const ll=prat-(prat*soma+mp.taxa_fixa)-p.custo_un;
+    const mg=prat>0?(ll/prat*100):0;
     const meta=mp.margem_desejada!=null?mp.margem_desejada:30;
     return mg<meta;
   });
@@ -1763,12 +1796,12 @@ function renderCatalog(){
   set('cat-total',D.catalog.length);
   if(D.catalog.length){
     const ac=D.catalog.reduce((s,p)=>s+p.custo_un,0)/D.catalog.length;
-    const ap=D.catalog.reduce((s,p)=>s+p.preco_base,0)/D.catalog.length;
-    set('cat-avg-c',R(ac));set('cat-avg-p',R(ap));
+    const cpCount=D.catalog.filter(p=>p.preco_praticado&&Object.keys(p.preco_praticado).length>0).length;
+    set('cat-avg-c',R(ac));set('cat-avg-p',`${cpCount} / ${D.catalog.length}`);
   } else {set('cat-avg-c','—');set('cat-avg-p','—');}
   const tbody=document.getElementById('cat-body');
   if(!list.length){
-    tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:26px;">${D.catalog.length?'Nenhuma peça encontrada.':'Nenhuma peça salva ainda.'}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="99" style="text-align:center;color:var(--t3);padding:26px;">${D.catalog.length?'Nenhuma peça encontrada.':'Nenhuma peça salva ainda.'}</td></tr>`;
     return;
   }
   const allMpInCatalog=new Set(D.catalog.flatMap(p=>Object.keys(p.mp_prices||{})));
@@ -1778,8 +1811,8 @@ function renderCatalog(){
   document.querySelector('#cat-table thead tr').innerHTML=`
     <th style="width:32px;text-align:center;"><input type="checkbox" ${allChecked?'checked':''} onchange="toggleSelectAll(this.checked)" title="Selecionar todos"></th>
     <th style="text-align:center;width:44px;">Foto</th><th>Código</th><th>Nome</th><th>Material</th><th>Tempo</th><th>Peso</th>
-    <th>Custo Un.</th><th>Preço Base</th>${mpNames.map(n=>`<th>${esc(n)}</th>`).join('')}
-    <th>Atualizado</th><th style="text-align:center">Ações</th>`;
+    <th>Custo Un.</th>${mpNames.map(n=>`<th>${esc(n)}</th>`).join('')}
+    <th style="text-align:center">Ações</th>`;
   tbody.innerHTML=list.map(p=>`
     <tr${_selectedProducts.has(p.id)?' style="background:var(--blue-s);"':''}>
       <td style="text-align:center;padding:5px 6px;">
@@ -1804,36 +1837,43 @@ function renderCatalog(){
       <td style="font-variant-numeric:tabular-nums;">${fmtTempo(p.tempo)}</td>
       <td style="font-variant-numeric:tabular-nums;">${p.peso}g</td>
       <td style="font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;">${R(p.custo_un)}</td>
-      <td style="font-weight:600;font-variant-numeric:tabular-nums;">${R(p.preco_base)}</td>
       ${mpNames.map(mn=>{
-        const preco=p.mp_prices&&p.mp_prices[mn];
-        if(!preco)return`<td style="color:var(--t3);">—</td>`;
+        const sugerido=p.mp_prices&&p.mp_prices[mn];
         const mp=D.marketplaces.find(m=>m.nome===mn);
-        let extra='';
-        let precoColor='var(--green)';
-        if(mp){
-          const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
-          const ll=preco-(preco*soma+mp.taxa_fixa)-p.custo_un;
-          const mg=preco>0?(ll/preco*100):0;
-          const meta=mp.margem_desejada!=null?mp.margem_desejada:30;
-          const mc=mg>=meta?'var(--green)':'var(--red)';
-          precoColor=mc;
-          extra=`<div style="font-size:11px;color:${mc};font-weight:500;">${mg.toFixed(1)}%</div>`;
-          if(p.tempo>0){const lph=ll/p.tempo;extra+=`<div style="font-size:10px;color:${mc};">${R(lph)}/h</div>`;}
-          // preço praticado
-          const prat=p.preco_praticado&&p.preco_praticado[mn];
-          if(prat>0){
-            const llP=prat-(prat*soma+mp.taxa_fixa)-p.custo_un;
-            const mgP=prat>0?(llP/prat*100):0;
-            const cP=mgP>=meta?'var(--green)':'var(--red)';
-            extra+=`<div style="margin-top:3px;padding-top:3px;border-top:1px solid var(--border);font-size:10px;color:var(--t3);">Praticado</div>`;
-            extra+=`<div style="font-size:11px;color:${cP};font-weight:600;">${R(prat)}</div>`;
-            extra+=`<div style="font-size:10px;color:${cP};">${mgP.toFixed(1)}%</div>`;
-          }
+        const safeId=mn.replace(/\W/g,'_');
+        const prat=p.preco_praticado&&p.preco_praticado[mn];
+        if(!mp)return`<td style="color:var(--t3);">—</td>`;
+        const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+        if(!sugerido){
+          return`<td style="vertical-align:top;min-width:120px;padding:5px 8px;">
+            <div style="font-size:11px;color:var(--red);font-weight:600;">Recalcular</div>
+            <div style="margin-top:4px;">
+              <input type="number" step="0.01" min="0" placeholder="Praticado"
+                id="cprat-${p.id}-${safeId}" value="${prat||''}"
+                style="width:82px;font-size:11px;padding:2px 4px;height:22px;"
+                onchange="updatePraticadoCatalog(${p.id},'${esc(mn)}',this.value)">
+            </div>
+            <div id="cprat-info-${p.id}-${safeId}" style="font-size:11px;">${_pratInfo(mp,prat||0,p.custo_un,p.tempo)}</div>
+          </td>`;
         }
-        return`<td style="color:${precoColor};font-weight:600;font-variant-numeric:tabular-nums;">${R(preco)}${extra}</td>`;
+        const ll_sug=sugerido-(sugerido*soma+mp.taxa_fixa)-p.custo_un;
+        const lph_sug=p.tempo>0?ll_sug/p.tempo:null;
+        const lphColor=lph_sug!==null&&lph_sug>=0?'var(--green)':'var(--red)';
+        return`<td style="vertical-align:top;min-width:120px;padding:5px 8px;">
+          <div style="font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;font-size:13px;">${R(sugerido)}</div>
+          ${lph_sug!==null?`<div style="font-size:10px;color:${lphColor};">${R(lph_sug)}/h</div>`:''}
+          <div style="height:1px;background:var(--border);margin:4px 0;"></div>
+          <div style="display:flex;align-items:center;gap:2px;">
+            <input type="number" step="0.01" min="0" placeholder="Praticado"
+              id="cprat-${p.id}-${safeId}" value="${prat||''}"
+              style="width:82px;font-size:11px;padding:2px 4px;height:22px;"
+              onchange="updatePraticadoCatalog(${p.id},'${esc(mn)}',this.value)">
+            <button title="Usar sugerido" style="height:22px;padding:0 5px;font-size:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--t2);cursor:pointer;flex-shrink:0;"
+              onclick="usarSugeridoCatalog(${p.id},'${esc(mn)}',${sugerido.toFixed(2)})">↗</button>
+          </div>
+          <div id="cprat-info-${p.id}-${safeId}" style="font-size:11px;margin-top:2px;">${_pratInfo(mp,prat||0,p.custo_un,p.tempo)}</div>
+        </td>`;
       }).join('')}
-      <td style="color:var(--t3);font-size:12px;white-space:nowrap;">${fmtDate(p.updatedAt||p.savedAt)}</td>
       <td style="text-align:center;white-space:nowrap;">
         <button class="btn btn-outline btn-xs" onclick="loadProduct(${p.id})">Editar</button>
         <button class="btn btn-danger btn-xs" onclick="deleteProduct(${p.id})" style="margin-left:4px;">Excluir</button>
@@ -1876,11 +1916,12 @@ function recalcularTudo(){
     const c_fixo=fixo_liq/Math.max(1,p.unidades_mes||40);
     const sub=c_mat+c_ener+c_amort+c_emb+c_fixo;
     p.custo_un=sub+sub*((p.falhas||0)/100);
-    p.preco_base=p.custo_un*(p.markup||1);
     p.mp_prices={};
     D.marketplaces.filter(m=>m.ativo).forEach(mp=>{
       const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
-      p.mp_prices[mp.nome]=soma<1?(p.preco_base+mp.taxa_fixa)/(1-soma):p.preco_base+mp.taxa_fixa;
+      const meta=(mp.margem_desejada!=null?mp.margem_desejada:30)/100;
+      const denom=1-soma-meta;
+      p.mp_prices[mp.nome]=denom>0?(p.custo_un+mp.taxa_fixa)/denom:0;
     });
     p.updatedAt=new Date().toISOString();
   });
@@ -1931,7 +1972,7 @@ function updateBulkInput(){
     sel.innerHTML=D.impressoras.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('');
     sel.style.display='';
   } else {
-    const cfg={markup:{step:'0.1',min:'0.1',placeholder:'Ex: 2.5'},falhas:{step:'1',min:'0',placeholder:'Ex: 5'},unidades_mes:{step:'1',min:'1',placeholder:'Ex: 40'}};
+    const cfg={falhas:{step:'1',min:'0',placeholder:'Ex: 5'},unidades_mes:{step:'1',min:'1',placeholder:'Ex: 40'}};
     const c=cfg[prop]||{};
     num.step=c.step||'1';num.min=c.min||'0';num.placeholder=c.placeholder||'';num.value='';
     num.style.display='';
@@ -1959,9 +2000,13 @@ function _recalcProduct(p){
   const c_fixo=fixo_liq/Math.max(1,p.unidades_mes||40);
   const sub=c_mat+c_ener+c_amort+c_emb+c_fixo;
   p.custo_un=sub+sub*((p.falhas||0)/100);
-  p.preco_base=p.custo_un*(p.markup||1);
   p.mp_prices={};
-  D.marketplaces.filter(m=>m.ativo).forEach(mp=>{const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;p.mp_prices[mp.nome]=soma<1?(p.preco_base+mp.taxa_fixa)/(1-soma):p.preco_base+mp.taxa_fixa;});
+  D.marketplaces.filter(m=>m.ativo).forEach(mp=>{
+    const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+    const meta=(mp.margem_desejada!=null?mp.margem_desejada:30)/100;
+    const denom=1-soma-meta;
+    p.mp_prices[mp.nome]=denom>0?(p.custo_un+mp.taxa_fixa)/denom:0;
+  });
   p.updatedAt=new Date().toISOString();
 }
 
@@ -2024,24 +2069,28 @@ function renderAnalysisPanel(id){
   const compPrice=_compPrices[id]||0;
   const mpRows=ativos.map((mp,i)=>{
     const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
-    const myPreco=soma<1?(p.preco_base+mp.taxa_fixa)/(1-soma):p.preco_base+mp.taxa_fixa;
-    const myLucroLiq=myPreco-(myPreco*soma+mp.taxa_fixa)-p.custo_un;
+    const myPreco=p.mp_prices&&p.mp_prices[mp.nome]||0;
+    const myLucroLiq=myPreco>0?myPreco-(myPreco*soma+mp.taxa_fixa)-p.custo_un:0;
     const myMargem=myPreco>0?(myLucroLiq/myPreco*100):0;
     const myColor=myLucroLiq>=0?'var(--green)':'var(--red)';
+    const prat=p.preco_praticado&&p.preco_praticado[mp.nome];
+    const pratCell=prat?`${R(prat)} <span style="color:${myColor};font-size:11px;">(${((prat-(prat*soma+mp.taxa_fixa)-p.custo_un)/prat*100).toFixed(1)}%)</span>`:'—';
     return `<tr>
       <td style="font-weight:600;">${esc(mp.nome)}</td>
-      <td>${R(myPreco)}</td>
-      <td style="color:${myColor};font-weight:600;">${R(myLucroLiq)}</td>
-      <td style="color:${myColor};">${myMargem.toFixed(1)}%</td>
+      <td>${myPreco>0?R(myPreco):'Meta inatingível'}</td>
+      <td style="color:${myColor};font-weight:600;">${myPreco>0?R(myLucroLiq):'—'}</td>
+      <td style="color:${myColor};">${myPreco>0?myMargem.toFixed(1)+'%':'—'}</td>
+      <td style="font-size:12px;">${pratCell}</td>
       <td id="ca-cl-${id}-${i}" style="color:var(--t3);">—</td>
       <td id="ca-cm-${id}-${i}" style="color:var(--t3);">—</td>
     </tr>`;
   }).join('');
   td.innerHTML=`<div class="cat-analysis-wrap">
-    <div style="flex:1;min-width:320px;overflow-x:auto;">
+    <div style="flex:1;min-width:360px;overflow-x:auto;">
       <table class="cat-mp-tbl">
         <thead><tr>
           <th>Canal</th><th>Preço sugerido</th><th>Lucro líq.</th><th>Margem</th>
+          <th>Praticado</th>
           <th style="color:var(--amber);">Lucro (concorrente)</th>
           <th style="color:var(--amber);">Margem</th>
         </tr></thead>
@@ -2058,8 +2107,7 @@ function renderAnalysisPanel(id){
           oninput="_compPrices[${id}]=parseFloat(this.value)||0;updateCompResults(${id})">
       </div>
       <div class="comp-meta">
-        Custo unitário: <strong>${R(p.custo_un)}</strong><br>
-        Preço base: <strong>${R(p.preco_base)}</strong>
+        Custo unitário: <strong>${R(p.custo_un)}</strong>
       </div>
     </div>
   </div>`;
