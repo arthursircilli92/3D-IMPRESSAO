@@ -157,10 +157,9 @@ select{cursor:pointer;}
 .mp-profit.lph{background:var(--surface2);}
 .mp-profit.lph .pp-v{color:var(--t1);}
 /* product name tooltip */
-.cat-tip{position:relative;display:inline-flex;align-items:center;gap:4px;max-width:100%;}
+.cat-tip{display:inline-flex;align-items:center;gap:4px;max-width:100%;}
 .cat-tip-icon{flex-shrink:0;width:14px;height:14px;border-radius:50%;background:var(--blue-s);color:var(--blue);font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:help;border:1px solid var(--blue-b);}
-.cat-tip-box{display:none;position:absolute;left:0;top:calc(100% + 5px);z-index:400;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:12px;white-space:pre-line;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:190px;color:var(--t1);font-weight:400;line-height:1.6;pointer-events:none;}
-.cat-tip:hover .cat-tip-box{display:block;}
+#g-tip{display:none;position:fixed;z-index:9000;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:12px;white-space:pre-line;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:190px;color:var(--t1);font-weight:400;line-height:1.6;pointer-events:none;}
 /* catalog filter bar */
 .cat-filter-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;padding:7px 11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-sm);}
 .cf-grp{display:flex;align-items:center;gap:4px;}
@@ -336,6 +335,7 @@ select{cursor:pointer;}
 </style>
 </head>
 <body>
+<div id="g-tip"></div>
 
 <!-- HEADER -->
 <header class="hdr">
@@ -1387,8 +1387,14 @@ function usarSugerido(mpNome,preco){
 // ==================== EMBALAGENS CATALOG ====================
 function embCusto(c){
   const total=(c.valor_compra||0)+(c.frete||0);
-  if(c.tipo==='rolo') return total/Math.max(1,(c.comprimento_m||1)*100); // R$/cm
-  return total/Math.max(1,c.qty_compra||1); // R$/un
+  let base;
+  if(c.tipo==='rolo') base=total/Math.max(1,(c.comprimento_m||1)*100);
+  else base=total/Math.max(1,c.qty_compra||1);
+  const kitCost=(c.kit||[]).reduce((s,k)=>{
+    const ki=(D.embalagens_catalog||[]).find(x=>x.id==k.catalog_id);
+    return s+(ki?(k.uso||0)*embCusto(ki):0);
+  },0);
+  return base+kitCost;
 }
 
 function renderEmbCatalog(){
@@ -1620,15 +1626,6 @@ function onEmbSelect(i,val){
     const c=(D.embalagens_catalog||[]).find(x=>x.id==val);
     if(c){
       D.embItems[i]={catalog_id:c.id,nome:c.nome,qty:1,custo_un:embCusto(c)};
-      // auto-adiciona kit
-      if(c.tipo!=='rolo'&&c.kit&&c.kit.length>0){
-        const kitItems=c.kit.map(k=>{
-          const ki=(D.embalagens_catalog||[]).find(x=>x.id==k.catalog_id);
-          if(!ki)return null;
-          return{catalog_id:ki.id,nome:ki.nome,qty:k.uso||1,custo_un:embCusto(ki)};
-        }).filter(Boolean);
-        D.embItems.splice(i+1,0,...kitItems);
-      }
     }
   }
   renderEmbRows();calcular();
@@ -1916,7 +1913,7 @@ function renderCatalog(){
         const lines=[p.stl?`STL: ${p.stl}`:'',p.dim_l&&p.dim_w&&p.dim_h?`Dimensões: ${p.dim_l}×${p.dim_w}×${p.dim_h} cm`:''].filter(Boolean).join('\n');
         const nameSpan=`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;display:inline-block;vertical-align:middle;" title="${esc(p.nome)}">${esc(p.nome)}</span>`;
         if(!lines)return nameSpan;
-        return`<span class="cat-tip">${nameSpan}<span class="cat-tip-icon">i</span><div class="cat-tip-box">${esc(lines)}</div></span>`;
+        return`<span class="cat-tip">${nameSpan}<span class="cat-tip-icon" onmouseenter="showGTip(this,${JSON.stringify(lines)})" onmouseleave="hideGTip()">i</span></span>`;
       })()}</td>
       <td>${esc(p.materialNome||'—')}</td>
       <td style="font-variant-numeric:tabular-nums;">${fmtTempo(p.tempo)}</td>
@@ -2461,6 +2458,19 @@ function confirmUsername(){
     window._resolveUserName = null;
   }
 }
+
+// ==================== GLOBAL TOOLTIP ====================
+function showGTip(el,text){
+  const tip=document.getElementById('g-tip');if(!tip)return;
+  tip.textContent=text;tip.style.display='block';
+  const r=el.getBoundingClientRect();
+  let top=r.bottom+6,left=r.left;
+  const tw=tip.offsetWidth,th=tip.offsetHeight;
+  if(top+th>window.innerHeight-8)top=r.top-th-6;
+  if(left+tw>window.innerWidth-8)left=window.innerWidth-tw-8;
+  tip.style.top=top+'px';tip.style.left=left+'px';
+}
+function hideGTip(){const tip=document.getElementById('g-tip');if(tip)tip.style.display='none';}
 
 // ==================== SIDEBAR TOGGLE ====================
 function toggleSidebar(){
