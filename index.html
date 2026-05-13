@@ -1575,6 +1575,7 @@ function renderEmbRows(){
     const catItem=item.catalog_id?(D.embalagens_catalog||[]).find(x=>x.id==item.catalog_id):null;
     const isRolo=catItem?.tipo==='rolo';
     const qtyLabel=isRolo?'cm usados':isCustom?'Qtd':'Qtd';
+    if(catItem)item.custo_un=embCusto(catItem);
     const custo=item.custo_un||0;
     const sub=(item.qty||0)*custo;
     return `<div class="emb-row">
