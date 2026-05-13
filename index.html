@@ -183,6 +183,12 @@ select{cursor:pointer;}
 .tbl tbody tr:hover td{background:var(--surface2);}
 .tbl input,.tbl select{padding:4px 7px;font-size:12.5px;}
 
+/* MAT ROWS (calculadora) */
+.mat-row{display:flex;gap:6px;align-items:center;margin-bottom:5px;}
+.mat-row select{flex:2;font-size:13px;padding:5px 7px;}
+.mat-row input{width:68px;text-align:center;font-size:13px;padding:5px 7px;}
+.mat-row-rm{width:22px;height:22px;border:none;border-radius:4px;background:var(--red-s);color:var(--red);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;}
+.mat-row-rm:hover{filter:brightness(1.08);}
 /* EMB ROWS (calculadora) */
 .emb-row{display:flex;gap:6px;align-items:flex-start;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border);}
 .emb-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
@@ -456,8 +462,16 @@ select{cursor:pointer;}
               <span style="color:var(--t2);font-size:13px;white-space:nowrap;">min</span>
             </div>
           </div>
-          <div class="field"><label>Peso de Filamento (g)</label><input type="number" id="c_peso" step="1" min="0" value="50" oninput="calcular()"></div>
-          <div class="field"><label>Material</label><select id="c_material" onchange="calcular()"><option value="">Selecionar...</option></select></div>
+          <div class="field span2">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <label style="margin:0;">Filamento / Cores</label>
+              <button class="btn btn-outline btn-xs" onclick="addMatRow()">+ Cor</button>
+            </div>
+            <div id="mat-rows"></div>
+            <div style="text-align:right;font-size:11.5px;color:var(--t2);margin-top:4px;">
+              Total: <strong id="mat-total-peso" style="font-variant-numeric:tabular-nums;">0g</strong>
+            </div>
+          </div>
           <div class="field"><label>Quantidade na Mesa</label><input type="number" id="c_qtd" step="1" min="1" value="1" oninput="calcular()"></div>
         </div>
       </div>
@@ -856,6 +870,7 @@ let D={
     {id:5,nome:'Publicidade fixa',valor:0},{id:6,nome:'Internet',valor:100},
   ],solar:0,kwh:0.84,faturamento:4000},
   embItems:[],
+  matItems:[{materialId:null,peso:0}],
   embalagens_catalog:[],
   nextEmbCatId:0,
 };
@@ -1171,20 +1186,21 @@ function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 // ==================== CALCULATOR ====================
 function calcInputs(){
   return{
-    tempo:n('c_tempo_h')+(n('c_tempo_m')/60),peso:n('c_peso'),qtd:Math.max(1,n('c_qtd')),
+    tempo:n('c_tempo_h')+(n('c_tempo_m')/60),qtd:Math.max(1,n('c_qtd')),
     falhas:n('c_falhas'),unidades:Math.max(1,n('c_unidades_mes')),
-    matId:parseInt(document.getElementById('c_material')?.value)||null,
     impId:parseInt(document.getElementById('c_impressora')?.value)||null,
   };
 }
 
 function calcular(){
-  const{tempo,peso,qtd,falhas,unidades,matId,impId}=calcInputs();
-  const mat=D.materiais.find(m=>m.id===matId);
+  const{tempo,qtd,falhas,unidades,impId}=calcInputs();
   const imp=D.impressoras.find(p=>p.id===impId);
   const kwh=D.custos.kwh||0.84;
 
-  const c_mat=mat?(peso/1000)*mat.preco_kg:0;
+  const c_mat=D.matItems.reduce((s,item)=>{
+    const m=D.materiais.find(x=>x.id===item.materialId);
+    return s+(m?(item.peso/1000)*m.preco_kg:0);
+  },0);
   const c_ener=imp?(imp.potencia/1000)*tempo*kwh:0;
   const c_amort=imp&&imp.vida_util>0?(imp.valor/imp.vida_util)*tempo:0;
   const emb=calcEmbTotal();
@@ -1202,7 +1218,7 @@ function calcular(){
   set('r_custo_info',`${qtd} na mesa → total ${R(custo_un*qtd)}`);
   _lastCustoUn=custo_un;
   const warns=[];
-  if(!matId)warns.push('Material não selecionado — custo de filamento não incluído');
+  if(!D.matItems.some(i=>i.materialId))warns.push('Material não selecionado — custo de filamento não incluído');
   if(!impId)warns.push('Impressora não selecionada — energia e amortização não incluídas');
   const wEl=document.getElementById('r-warnings');
   if(wEl)wEl.innerHTML=warns.map(w=>`<div style="font-size:11.5px;color:var(--amber);background:var(--amber-s);border-radius:5px;padding:5px 9px;text-align:left;">⚠ ${w}</div>`).join('');
@@ -1665,11 +1681,16 @@ function applyEmbRec(catalogId){
 
 // ==================== PRODUCT ====================
 function getFormData(){
-  const{tempo,peso,qtd,falhas,unidades,matId,impId}=calcInputs();
-  const mat=D.materiais.find(m=>m.id===matId);
+  const{tempo,qtd,falhas,unidades,impId}=calcInputs();
   const imp=D.impressoras.find(p=>p.id===impId);
   const kwh=D.custos.kwh||0.84;
-  const c_mat=mat?(peso/1000)*mat.preco_kg:0;
+  const c_mat=D.matItems.reduce((s,item)=>{
+    const m=D.materiais.find(x=>x.id===item.materialId);
+    return s+(m?(item.peso/1000)*m.preco_kg:0);
+  },0);
+  const pesoTotal=D.matItems.reduce((s,i)=>s+(i.peso||0),0);
+  const mats=D.matItems.filter(i=>i.materialId);
+  const matNome=mats.length===0?'—':mats.length===1?(D.materiais.find(m=>m.id===mats[0].materialId)?.nome||'—'):`Misto (${mats.length})`;
   const c_ener=imp?(imp.potencia/1000)*tempo*kwh:0;
   const c_amort=imp&&imp.vida_util>0?(imp.valor/imp.vida_util)*tempo:0;
   const emb=calcEmbTotal();const c_emb=emb/qtd;
@@ -1689,9 +1710,10 @@ function getFormData(){
     nome:document.getElementById('c_nome').value.trim(),
     stl:document.getElementById('c_stl').value.trim(),
     image:currentImage,
-    materialId:matId,materialNome:mat?mat.nome:'—',
+    materiais:JSON.parse(JSON.stringify(D.matItems)),
+    materialNome:matNome,
     impressoraId:impId,impressoraNome:imp?imp.nome:'—',
-    tempo,peso,qtd,falhas,unidades_mes:unidades,
+    tempo,peso:pesoTotal,qtd,falhas,unidades_mes:unidades,
     dim_l:parseFloat(document.getElementById('dim_l')?.value)||0,
     dim_w:parseFloat(document.getElementById('dim_w')?.value)||0,
     dim_h:parseFloat(document.getElementById('dim_h')?.value)||0,
@@ -1729,18 +1751,17 @@ function loadProduct(id){
   const _th=Math.floor(p.tempo||1);const _tm=Math.round(((p.tempo||1)-_th)*60);
   document.getElementById('c_tempo_h').value=_th;
   document.getElementById('c_tempo_m').value=_tm;
-  document.getElementById('c_peso').value=p.peso||0;
   document.getElementById('c_qtd').value=p.qtd||1;
   document.getElementById('c_falhas').value=p.falhas||10;
   document.getElementById('c_unidades_mes').value=p.unidades_mes||40;
   const _setDim=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
   _setDim('dim_l',p.dim_l);_setDim('dim_w',p.dim_w);_setDim('dim_h',p.dim_h);
   D.embItems=JSON.parse(JSON.stringify(p.embalagens||[]));
+  D.matItems=p.materiais&&p.materiais.length?JSON.parse(JSON.stringify(p.materiais)):[{materialId:p.materialId||null,peso:p.peso||0}];
   _praticado=JSON.parse(JSON.stringify(p.preco_praticado||{}));
-  renderEmbRows();updateSelects();
+  renderEmbRows();renderMatRows();updateSelects();
   setImagePreview(p.image||null);
   setTimeout(()=>{
-    if(p.materialId)document.getElementById('c_material').value=p.materialId;
     if(p.impressoraId)document.getElementById('c_impressora').value=p.impressoraId;
     calcular();updateProductIndicator();
     hideDD();document.getElementById('search-input').value='';
@@ -1755,13 +1776,13 @@ function clearProduct(){
   clearImage();
   document.getElementById('c_tempo_h').value=1;
   document.getElementById('c_tempo_m').value=0;
-  document.getElementById('c_peso').value=50;
   document.getElementById('c_qtd').value=1;
   document.getElementById('c_falhas').value=D.custos.def_falhas??8;
   document.getElementById('c_unidades_mes').value=D.custos.def_unidades||40;
   D.embItems=[];
+  D.matItems=[{materialId:null,peso:0}];
   _praticado={};
-  renderEmbRows();updateProductIndicator();calcular();
+  renderEmbRows();renderMatRows();updateProductIndicator();calcular();
 }
 
 function updateProductIndicator(){
@@ -1990,9 +2011,9 @@ function recalcularTudo(){
   const fixo_liq=Math.max(0,fixo_total-(D.custos.solar||0));
   const kwh=D.custos.kwh||0.84;
   D.catalog.forEach(p=>{
-    const mat=D.materiais.find(m=>m.id===p.materialId);
+    const mats=p.materiais&&p.materiais.length?p.materiais:[{materialId:p.materialId,peso:p.peso||0}];
     const imp=D.impressoras.find(pr=>pr.id===p.impressoraId);
-    const c_mat=mat?(p.peso/1000)*mat.preco_kg:0;
+    const c_mat=mats.reduce((s,item)=>{const m=D.materiais.find(x=>x.id===item.materialId);return s+(m?(item.peso/1000)*m.preco_kg:0);},0);
     const c_ener=imp?(imp.potencia/1000)*p.tempo*kwh:0;
     const c_amort=imp&&imp.vida_util>0?(imp.valor/imp.vida_util)*p.tempo:0;
     let c_emb=0;
@@ -2077,9 +2098,9 @@ function _recalcProduct(p){
   const fixo_total=D.custos.items.reduce((s,i)=>s+(i.valor||0),0);
   const fixo_liq=Math.max(0,fixo_total-(D.custos.solar||0));
   const kwh=D.custos.kwh||0.84;
-  const mat=D.materiais.find(m=>m.id===p.materialId);
+  const mats=p.materiais&&p.materiais.length?p.materiais:[{materialId:p.materialId,peso:p.peso||0}];
   const imp=D.impressoras.find(pr=>pr.id===p.impressoraId);
-  const c_mat=mat?(p.peso/1000)*mat.preco_kg:0;
+  const c_mat=mats.reduce((s,item)=>{const m=D.materiais.find(x=>x.id===item.materialId);return s+(m?(item.peso/1000)*m.preco_kg:0);},0);
   const c_ener=imp?(imp.potencia/1000)*p.tempo*kwh:0;
   const c_amort=imp&&imp.vida_util>0?(imp.valor/imp.vida_util)*p.tempo:0;
   let c_emb=0;
@@ -2239,16 +2260,42 @@ document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))hideD
 
 // ==================== SELECTS ====================
 function updateSelects(){
-  const ms=document.getElementById('c_material');
   const is=document.getElementById('c_impressora');
-  if(!ms||!is)return;
-  const cm=ms.value,ci=is.value;
-  ms.innerHTML='<option value="">Selecionar material...</option>'+
-    D.materiais.map(m=>`<option value="${m.id}"${String(m.id)===cm?' selected':''}>${esc(m.nome)} — R$ ${m.preco_kg}/kg</option>`).join('');
+  if(!is)return;
+  const ci=is.value;
   is.innerHTML='<option value="">Selecionar impressora...</option>'+
     D.impressoras.map(p=>`<option value="${p.id}"${String(p.id)===ci?' selected':''}>${esc(p.nome)} (${p.potencia}W)</option>`).join('');
-  if(!ms.value&&D.materiais.length)ms.value=D.materiais[0].id;
   if(!is.value&&D.impressoras.length)is.value=D.impressoras[0].id;
+  renderMatRows();
+}
+
+function _matOpts(selectedId){
+  return'<option value="">Selecionar...</option>'+
+    D.materiais.map(m=>`<option value="${m.id}"${m.id===selectedId?' selected':''}>${esc(m.nome)} — R$${m.preco_kg}/kg</option>`).join('');
+}
+
+function renderMatRows(){
+  const el=document.getElementById('mat-rows');if(!el)return;
+  el.innerHTML=D.matItems.map((item,i)=>`
+    <div class="mat-row">
+      <select onchange="D.matItems[${i}].materialId=parseInt(this.value)||null;calcular()">${_matOpts(item.materialId)}</select>
+      <input type="number" step="1" min="0" placeholder="g" value="${item.peso||''}"
+        oninput="D.matItems[${i}].peso=parseFloat(this.value)||0;calcular()">
+      ${D.matItems.length>1?`<button class="mat-row-rm" onclick="removeMatRow(${i})" title="Remover">✕</button>`:'<span style="width:22px;flex-shrink:0;"></span>'}
+    </div>`).join('');
+  const total=D.matItems.reduce((s,i)=>s+(i.peso||0),0);
+  const el2=document.getElementById('mat-total-peso');if(el2)el2.textContent=total+'g';
+}
+
+function addMatRow(){
+  D.matItems.push({materialId:null,peso:0});
+  renderMatRows();
+}
+
+function removeMatRow(i){
+  if(D.matItems.length<=1)return;
+  D.matItems.splice(i,1);
+  renderMatRows();calcular();
 }
 
 // ==================== CUSTOS ====================
@@ -2468,7 +2515,7 @@ async function init(){
     document.getElementById('c_falhas').value=df;
     document.getElementById('c_unidades_mes').value=du;
   }
-  [renderEmbCatalog,renderEmbRows,renderCostRows,renderMateriais,renderImpressoras,renderMarketplaces,renderCatalog].forEach(fn=>{try{fn();}catch(e){console.error('[init]',fn.name,e);}});
+  [renderEmbCatalog,renderEmbRows,renderMatRows,renderCostRows,renderMateriais,renderImpressoras,renderMarketplaces,renderCatalog].forEach(fn=>{try{fn();}catch(e){console.error('[init]',fn.name,e);}});
   try{updateSelects();updateProductIndicator();updateCustosSummary();calcular();}catch(e){console.error('[init] post-render',e);}
 
   setupRealtime();   // sincronização em tempo real
