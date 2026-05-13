@@ -492,7 +492,7 @@ select{cursor:pointer;}
       <div class="card">
         <div class="card-title" style="margin-bottom:13px">Ajustes de Cálculo</div>
         <div class="g2">
-          <div class="field"><label>Taxa de Falhas (%)</label><input type="number" id="c_falhas" step="1" min="0" max="50" value="10" oninput="calcular()"></div>
+          <div class="field"><label>Taxa de Falhas (%)</label><input type="number" id="c_falhas" step="1" min="0" max="50" value="8" oninput="calcular()"></div>
           <div class="field"><label>Unidades previstas / mês</label><input type="number" id="c_unidades_mes" step="1" min="1" value="40" oninput="calcular()"></div>
         </div>
       </div>
@@ -674,6 +674,20 @@ select{cursor:pointer;}
         </div>
       </div>
     </div>
+  </div>
+  <div class="card" style="margin-top:12px;">
+    <div class="card-title" style="margin-bottom:13px;">Padrões para novos produtos</div>
+    <div class="g2">
+      <div class="field">
+        <label>Taxa de Falhas padrão (%)</label>
+        <input type="number" id="cf_def_falhas" step="1" min="0" max="50" value="8" oninput="saveDefaults()">
+      </div>
+      <div class="field">
+        <label>Unidades previstas / mês padrão</label>
+        <input type="number" id="cf_def_unidades" step="1" min="1" value="40" oninput="saveDefaults()">
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:var(--t3);margin-top:8px;">Aplicados automaticamente ao iniciar o cálculo de uma nova peça.</div>
   </div>
 </div>
 
@@ -1743,7 +1757,8 @@ function clearProduct(){
   document.getElementById('c_tempo_m').value=0;
   document.getElementById('c_peso').value=50;
   document.getElementById('c_qtd').value=1;
-  document.getElementById('c_falhas').value=10;
+  document.getElementById('c_falhas').value=D.custos.def_falhas??8;
+  document.getElementById('c_unidades_mes').value=D.custos.def_unidades||40;
   D.embItems=[];
   _praticado={};
   renderEmbRows();updateProductIndicator();calcular();
@@ -2255,6 +2270,11 @@ function saveCustos(){
   D.custos.solar=parseFloat(document.getElementById('cf_solar')?.value)||0;
   save();calcular();
 }
+function saveDefaults(){
+  D.custos.def_falhas=parseFloat(document.getElementById('cf_def_falhas')?.value)??8;
+  D.custos.def_unidades=parseFloat(document.getElementById('cf_def_unidades')?.value)||40;
+  save();
+}
 function updateCustosSummary(total,solar,liq,por_un,unidades){
   if(total===undefined){
     total=D.custos.items.reduce((s,i)=>s+(i.valor||0),0);
@@ -2441,6 +2461,12 @@ async function init(){
     document.getElementById('cf_kwh').value=D.custos.kwh||0.84;
     document.getElementById('cf_faturamento').value=D.custos.faturamento||4000;
     document.getElementById('cf_solar').value=D.custos.solar||0;
+    const df=D.custos.def_falhas??8;
+    const du=D.custos.def_unidades||40;
+    document.getElementById('cf_def_falhas').value=df;
+    document.getElementById('cf_def_unidades').value=du;
+    document.getElementById('c_falhas').value=df;
+    document.getElementById('c_unidades_mes').value=du;
   }
   [renderEmbCatalog,renderEmbRows,renderCostRows,renderMateriais,renderImpressoras,renderMarketplaces,renderCatalog].forEach(fn=>{try{fn();}catch(e){console.error('[init]',fn.name,e);}});
   try{updateSelects();updateProductIndicator();updateCustosSummary();calcular();}catch(e){console.error('[init] post-render',e);}
