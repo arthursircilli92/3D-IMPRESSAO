@@ -145,6 +145,11 @@ select{cursor:pointer;}
 .mp-profit.margem .pp-v{color:var(--blue);}
 .mp-profit.lph{background:var(--surface2);}
 .mp-profit.lph .pp-v{color:var(--t1);}
+/* product name tooltip */
+.cat-tip{position:relative;display:inline-flex;align-items:center;gap:4px;max-width:100%;}
+.cat-tip-icon{flex-shrink:0;width:14px;height:14px;border-radius:50%;background:var(--blue-s);color:var(--blue);font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:help;border:1px solid var(--blue-b);}
+.cat-tip-box{display:none;position:absolute;left:0;top:calc(100% + 5px);z-index:400;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:12px;white-space:pre-line;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:190px;color:var(--t1);font-weight:400;line-height:1.6;pointer-events:none;}
+.cat-tip:hover .cat-tip-box{display:block;}
 /* catalog filter bar */
 .cat-filter-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;padding:7px 11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-sm);}
 .cf-grp{display:flex;align-items:center;gap:4px;}
@@ -1789,9 +1794,12 @@ function renderCatalog(){
         }
       </td>
       <td><span class="badge badge-blue" style="font-family:monospace;font-size:11px;">${p.code}</span></td>
-      <td style="font-weight:600;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-        title="${esc(p.nome)}${p.stl?'\nSTL: '+esc(p.stl):''}${p.dim_l&&p.dim_w&&p.dim_h?'\nDimensões: '+p.dim_l+'×'+p.dim_w+'×'+p.dim_h+' cm':''}"
-      >${esc(p.nome)}</td>
+      <td style="font-weight:600;max-width:160px;">${(()=>{
+        const lines=[p.stl?`STL: ${p.stl}`:'',p.dim_l&&p.dim_w&&p.dim_h?`Dimensões: ${p.dim_l}×${p.dim_w}×${p.dim_h} cm`:''].filter(Boolean).join('\n');
+        const nameSpan=`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;display:inline-block;vertical-align:middle;" title="${esc(p.nome)}">${esc(p.nome)}</span>`;
+        if(!lines)return nameSpan;
+        return`<span class="cat-tip">${nameSpan}<span class="cat-tip-icon">i</span><div class="cat-tip-box">${esc(lines)}</div></span>`;
+      })()}</td>
       <td>${esc(p.materialNome||'—')}</td>
       <td style="font-variant-numeric:tabular-nums;">${fmtTempo(p.tempo)}</td>
       <td style="font-variant-numeric:tabular-nums;">${p.peso}g</td>
