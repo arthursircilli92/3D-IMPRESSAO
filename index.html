@@ -1906,30 +1906,27 @@ function renderCatalog(){
       </td>
     </tr>
     <tr id="prat-row-${p.id}" style="display:none;">
-      <td colspan="99" style="padding:0;background:var(--blue-s);border-bottom:2px solid var(--blue-b);">
-        <div style="padding:10px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
-          ${mpNames.map(mn=>{
-            const mp=D.marketplaces.find(m=>m.nome===mn);
-            if(!mp)return'';
-            const safeId=mn.replace(/\W/g,'_');
-            const prat=p.preco_praticado&&p.preco_praticado[mn];
-            const sugerido=p.mp_prices&&p.mp_prices[mn];
-            return`<div>
-              <div style="font-size:10.5px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">${esc(mn)}</div>
-              <div style="font-size:11px;color:var(--t3);margin-bottom:5px;">Sugerido: <strong style="color:var(--blue);">${sugerido?R(sugerido):'—'}</strong></div>
-              <div style="display:flex;align-items:center;gap:3px;">
-                <input type="number" step="0.01" min="0" placeholder="Praticado"
-                  id="cprat-${p.id}-${safeId}" value="${prat||''}"
-                  style="width:96px;font-size:12.5px;padding:4px 7px;height:28px;"
-                  onchange="updatePraticadoCatalog(${p.id},'${esc(mn)}',this.value)">
-                ${sugerido?`<button onclick="usarSugeridoCatalog(${p.id},'${esc(mn)}',${sugerido.toFixed(2)})" title="Usar sugerido"
-                  style="height:28px;padding:0 7px;font-size:11px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--t2);cursor:pointer;flex-shrink:0;">↗</button>`:''}
-              </div>
-              <div id="cprat-info-${p.id}-${safeId}" style="margin-top:3px;font-size:11px;">${_pratInfo(mp,prat||0,p.custo_un,p.tempo)}</div>
-            </div>`;
-          }).join('')}
-        </div>
-      </td>
+      <td colspan="8" style="background:var(--blue-s);border-bottom:2px solid var(--blue-b);padding:0;"></td>
+      ${mpNames.map(mn=>{
+        const mp=D.marketplaces.find(m=>m.nome===mn);
+        if(!mp)return`<td style="background:var(--blue-s);border-bottom:2px solid var(--blue-b);"></td>`;
+        const safeId=mn.replace(/\W/g,'_');
+        const prat=p.preco_praticado&&p.preco_praticado[mn];
+        const sugerido=p.mp_prices&&p.mp_prices[mn];
+        return`<td style="background:var(--blue-s);border-bottom:2px solid var(--blue-b);padding:8px 10px;vertical-align:top;white-space:nowrap;">
+          <div style="font-size:10px;color:var(--t3);margin-bottom:4px;">Sugerido: <strong style="color:var(--blue);">${sugerido?R(sugerido):'—'}</strong></div>
+          <div style="display:flex;align-items:center;gap:3px;">
+            <input type="number" step="0.01" min="0" placeholder="Praticado"
+              id="cprat-${p.id}-${safeId}" value="${prat||''}"
+              style="width:96px;font-size:12.5px;padding:4px 7px;height:28px;"
+              onchange="updatePraticadoCatalog(${p.id},'${esc(mn)}',this.value)">
+            ${sugerido?`<button onclick="usarSugeridoCatalog(${p.id},'${esc(mn)}',${sugerido.toFixed(2)})" title="Usar sugerido"
+              style="height:28px;padding:0 7px;font-size:11px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--t2);cursor:pointer;flex-shrink:0;">↗</button>`:''}
+          </div>
+          <div id="cprat-info-${p.id}-${safeId}" style="margin-top:3px;font-size:11px;">${_pratInfo(mp,prat||0,p.custo_un,p.tempo)}</div>
+        </td>`;
+      }).join('')}
+      <td style="background:var(--blue-s);border-bottom:2px solid var(--blue-b);padding:0;"></td>
     </tr>
     <tr id="ca-row-${p.id}" style="display:none;"><td id="ca-td-${p.id}" colspan="99" style="padding:0;"></td></tr>`).join('');
   _pratRowOpen.forEach(id=>{
