@@ -1219,9 +1219,10 @@ function updatePraticadoCatalog(prodId,mpNome,val){
   const mp=D.marketplaces.find(m=>m.nome===mpNome);
   if(!mp)return;
   const safeId=mpNome.replace(/\W/g,'_');
-  const el=document.getElementById(`cprat-info-${prodId}-${safeId}`);
-  if(el)el.innerHTML=_pratInfo(mp,v>0?v:0,p.custo_un,p.tempo);
-  // update catalog stats
+  const infoEl=document.getElementById(`cprat-info-${prodId}-${safeId}`);
+  if(infoEl)infoEl.innerHTML=_pratInfo(mp,v>0?v:0,p.custo_un,p.tempo);
+  const compEl=document.getElementById(`cprat-compact-${prodId}-${safeId}`);
+  if(compEl)compEl.innerHTML=_pratInfoCompact(mp,v>0?v:0,p.custo_un,p.tempo);
   const cpCount=D.catalog.filter(x=>x.preco_praticado&&Object.keys(x.preco_praticado).length>0).length;
   set('cat-avg-p',`${cpCount} / ${D.catalog.length}`);
 }
@@ -1231,6 +1232,33 @@ function usarSugeridoCatalog(prodId,mpNome,preco){
   const input=document.getElementById(`cprat-${prodId}-${safeId}`);
   if(input){input.value=preco.toFixed(2);}
   updatePraticadoCatalog(prodId,mpNome,preco.toFixed(2));
+}
+
+function _pratInfoCompact(mp,prat,custo_un,tempo){
+  if(!prat||prat<=0)return'';
+  const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+  const ll=prat-(prat*soma+mp.taxa_fixa)-custo_un;
+  const mg=prat>0?(ll/prat*100):0;
+  const lph=tempo>0?ll/tempo:null;
+  const meta=mp.margem_desejada!=null?mp.margem_desejada:30;
+  const c=mg>=meta?'var(--green)':'var(--red)';
+  return`<span style="color:${c};font-weight:600;">${mg.toFixed(1)}%</span>`
+    +(lph!==null?`<span style="color:${c};font-size:9.5px;margin-left:3px;">${R(lph)}/h</span>`:'');
+}
+
+function togglePraticado(id){
+  const row=document.getElementById('prat-row-'+id);
+  if(!row)return;
+  const open=_pratRowOpen.has(id);
+  if(open){
+    row.style.display='none';
+    _pratRowOpen.delete(id);
+    document.querySelectorAll('.ptgl-'+id).forEach(b=>b.textContent='▾');
+  } else {
+    row.style.display='';
+    _pratRowOpen.add(id);
+    document.querySelectorAll('.ptgl-'+id).forEach(b=>b.textContent='▴');
+  }
 }
 
 let _lastTempo=0;
@@ -1844,34 +1872,31 @@ function renderCatalog(){
         const prat=p.preco_praticado&&p.preco_praticado[mn];
         if(!mp)return`<td style="color:var(--t3);">—</td>`;
         const soma=(mp.comissao+mp.cartao+mp.anuncio+mp.imposto)/100;
+        const hasPrat=prat>0;
+        const btnCls=`ptgl-${p.id}`;
+        const toggleBtn=`<button class="${btnCls}" onclick="togglePraticado(${p.id})" title="Editar preço praticado"
+          style="flex-shrink:0;width:15px;height:15px;border:1px solid var(--border);border-radius:3px;background:var(--surface2);color:${hasPrat?'var(--green)':'var(--t3)'};cursor:pointer;font-size:8px;padding:0;line-height:1;">${_pratRowOpen.has(p.id)?'▴':'▾'}</button>`;
         if(!sugerido){
-          return`<td style="vertical-align:top;min-width:120px;padding:5px 8px;">
-            <div style="font-size:11px;color:var(--red);font-weight:600;">Recalcular</div>
-            <div style="margin-top:4px;">
-              <input type="number" step="0.01" min="0" placeholder="Praticado"
-                id="cprat-${p.id}-${safeId}" value="${prat||''}"
-                style="width:82px;font-size:11px;padding:2px 4px;height:22px;"
-                onchange="updatePraticadoCatalog(${p.id},'${esc(mn)}',this.value)">
+          return`<td style="padding:6px 10px;white-space:nowrap;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:11px;color:var(--red);font-weight:600;">Recalcular</span>
+              ${toggleBtn}
             </div>
-            <div id="cprat-info-${p.id}-${safeId}" style="font-size:11px;">${_pratInfo(mp,prat||0,p.custo_un,p.tempo)}</div>
+            <div id="cprat-compact-${p.id}-${safeId}">${_pratInfoCompact(mp,prat||0,p.custo_un,p.tempo)}</div>
           </td>`;
         }
         const ll_sug=sugerido-(sugerido*soma+mp.taxa_fixa)-p.custo_un;
         const lph_sug=p.tempo>0?ll_sug/p.tempo:null;
         const lphColor=lph_sug!==null&&lph_sug>=0?'var(--green)':'var(--red)';
-        return`<td style="vertical-align:top;min-width:120px;padding:5px 8px;">
-          <div style="font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;font-size:13px;">${R(sugerido)}</div>
-          ${lph_sug!==null?`<div style="font-size:10px;color:${lphColor};">${R(lph_sug)}/h</div>`:''}
-          <div style="height:1px;background:var(--border);margin:4px 0;"></div>
-          <div style="display:flex;align-items:center;gap:2px;">
-            <input type="number" step="0.01" min="0" placeholder="Praticado"
-              id="cprat-${p.id}-${safeId}" value="${prat||''}"
-              style="width:82px;font-size:11px;padding:2px 4px;height:22px;"
-              onchange="updatePraticadoCatalog(${p.id},'${esc(mn)}',this.value)">
-            <button title="Usar sugerido" style="height:22px;padding:0 5px;font-size:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--t2);cursor:pointer;flex-shrink:0;"
-              onclick="usarSugeridoCatalog(${p.id},'${esc(mn)}',${sugerido.toFixed(2)})">↗</button>
+        return`<td style="padding:6px 10px;white-space:nowrap;">
+          <div style="display:flex;align-items:flex-start;gap:4px;">
+            <div>
+              <div style="font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;font-size:13px;">${R(sugerido)}</div>
+              ${lph_sug!==null?`<div style="font-size:10px;color:${lphColor};">${R(lph_sug)}/h</div>`:''}
+            </div>
+            ${toggleBtn}
           </div>
-          <div id="cprat-info-${p.id}-${safeId}" style="font-size:11px;margin-top:2px;">${_pratInfo(mp,prat||0,p.custo_un,p.tempo)}</div>
+          <div id="cprat-compact-${p.id}-${safeId}">${_pratInfoCompact(mp,prat||0,p.custo_un,p.tempo)}</div>
         </td>`;
       }).join('')}
       <td style="text-align:center;white-space:nowrap;">
@@ -1880,7 +1905,39 @@ function renderCatalog(){
         <button class="btn btn-xs" id="ca-btn-${p.id}" onclick="toggleAnalysis(${p.id})" style="margin-left:4px;background:var(--bg2);border:1px solid var(--border2);color:var(--t2);">Análise</button>
       </td>
     </tr>
+    <tr id="prat-row-${p.id}" style="display:none;">
+      <td colspan="99" style="padding:0;background:var(--blue-s);border-bottom:2px solid var(--blue-b);">
+        <div style="padding:10px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+          ${mpNames.map(mn=>{
+            const mp=D.marketplaces.find(m=>m.nome===mn);
+            if(!mp)return'';
+            const safeId=mn.replace(/\W/g,'_');
+            const prat=p.preco_praticado&&p.preco_praticado[mn];
+            const sugerido=p.mp_prices&&p.mp_prices[mn];
+            return`<div>
+              <div style="font-size:10.5px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">${esc(mn)}</div>
+              <div style="font-size:11px;color:var(--t3);margin-bottom:5px;">Sugerido: <strong style="color:var(--blue);">${sugerido?R(sugerido):'—'}</strong></div>
+              <div style="display:flex;align-items:center;gap:3px;">
+                <input type="number" step="0.01" min="0" placeholder="Praticado"
+                  id="cprat-${p.id}-${safeId}" value="${prat||''}"
+                  style="width:96px;font-size:12.5px;padding:4px 7px;height:28px;"
+                  onchange="updatePraticadoCatalog(${p.id},'${esc(mn)}',this.value)">
+                ${sugerido?`<button onclick="usarSugeridoCatalog(${p.id},'${esc(mn)}',${sugerido.toFixed(2)})" title="Usar sugerido"
+                  style="height:28px;padding:0 7px;font-size:11px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--t2);cursor:pointer;flex-shrink:0;">↗</button>`:''}
+              </div>
+              <div id="cprat-info-${p.id}-${safeId}" style="margin-top:3px;font-size:11px;">${_pratInfo(mp,prat||0,p.custo_un,p.tempo)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </td>
+    </tr>
     <tr id="ca-row-${p.id}" style="display:none;"><td id="ca-td-${p.id}" colspan="99" style="padding:0;"></td></tr>`).join('');
+  _pratRowOpen.forEach(id=>{
+    if(list.find(p=>p.id===id)){
+      const row=document.getElementById('prat-row-'+id);
+      if(row)row.style.display='';
+    }
+  });
   if(_catAnalysisOpen && list.find(p=>p.id===_catAnalysisOpen)){
     const row=document.getElementById('ca-row-'+_catAnalysisOpen);
     if(row){row.style.display='';renderAnalysisPanel(_catAnalysisOpen);}
@@ -2038,6 +2095,7 @@ function applyBulkEdit(){
 // ==================== CATALOG ANALYSIS ====================
 let _catAnalysisOpen=null;
 let _compPrices={};
+let _pratRowOpen=new Set();
 
 function toggleAnalysis(id){
   const row=document.getElementById('ca-row-'+id);
