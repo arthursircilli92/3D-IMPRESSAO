@@ -1914,7 +1914,7 @@ function renderCatalog(){
         const lines=[p.stl?`STL: ${p.stl}`:'',p.dim_l&&p.dim_w&&p.dim_h?`Dimensões: ${p.dim_l}×${p.dim_w}×${p.dim_h} cm`:''].filter(Boolean).join('\n');
         const nameSpan=`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;display:inline-block;vertical-align:middle;" title="${esc(p.nome)}">${esc(p.nome)}</span>`;
         if(!lines)return nameSpan;
-        return`<span class="cat-tip">${nameSpan}<span class="cat-tip-icon" onmouseenter="showGTip(this,${JSON.stringify(lines)})" onmouseleave="hideGTip()">i</span></span>`;
+        return`<span class="cat-tip">${nameSpan}<span class="cat-tip-icon" data-tip="${esc(lines)}" onmouseenter="showGTip(this,this.dataset.tip)" onmouseleave="hideGTip()">i</span></span>`;
       })()}</td>
       <td>${esc(p.materialNome||'—')}</td>
       <td style="font-variant-numeric:tabular-nums;">${fmtTempo(p.tempo)}</td>
