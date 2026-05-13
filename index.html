@@ -1593,6 +1593,9 @@ function getFormData(){
     materialId:matId,materialNome:mat?mat.nome:'—',
     impressoraId:impId,impressoraNome:imp?imp.nome:'—',
     tempo,peso,qtd,falhas,markup,unidades_mes:unidades,
+    dim_l:parseFloat(document.getElementById('dim_l')?.value)||0,
+    dim_w:parseFloat(document.getElementById('dim_w')?.value)||0,
+    dim_h:parseFloat(document.getElementById('dim_h')?.value)||0,
     embalagens:JSON.parse(JSON.stringify(D.embItems)),
     preco_praticado:{..._praticado},
     custo_un,preco_base,mp_prices,
@@ -1632,6 +1635,8 @@ function loadProduct(id){
   document.getElementById('c_falhas').value=p.falhas||10;
   document.getElementById('c_markup').value=p.markup||3;
   document.getElementById('c_unidades_mes').value=p.unidades_mes||40;
+  const _setDim=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+  _setDim('dim_l',p.dim_l);_setDim('dim_w',p.dim_w);_setDim('dim_h',p.dim_h);
   D.embItems=JSON.parse(JSON.stringify(p.embalagens||[]));
   _praticado=JSON.parse(JSON.stringify(p.preco_praticado||{}));
   renderEmbRows();updateSelects();
@@ -1767,7 +1772,7 @@ function renderCatalog(){
   const allChecked=allIds.length&&allIds.every(id=>_selectedProducts.has(id));
   document.querySelector('#cat-table thead tr').innerHTML=`
     <th style="width:32px;text-align:center;"><input type="checkbox" ${allChecked?'checked':''} onchange="toggleSelectAll(this.checked)" title="Selecionar todos"></th>
-    <th style="text-align:center;width:44px;">Foto</th><th>Código</th><th>Nome</th><th>STL</th><th>Material</th><th>Tempo</th><th>Peso</th>
+    <th style="text-align:center;width:44px;">Foto</th><th>Código</th><th>Nome</th><th>Material</th><th>Tempo</th><th>Peso</th>
     <th>Custo Un.</th><th>Preço Base</th>${mpNames.map(n=>`<th>${esc(n)}</th>`).join('')}
     <th>Atualizado</th><th style="text-align:center">Ações</th>`;
   tbody.innerHTML=list.map(p=>`
@@ -1784,8 +1789,9 @@ function renderCatalog(){
         }
       </td>
       <td><span class="badge badge-blue" style="font-family:monospace;font-size:11px;">${p.code}</span></td>
-      <td style="font-weight:600;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(p.nome)}">${esc(p.nome)}</td>
-      <td style="color:var(--t3);font-size:12px;">${esc(p.stl||'—')}</td>
+      <td style="font-weight:600;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+        title="${esc(p.nome)}${p.stl?'\nSTL: '+esc(p.stl):''}${p.dim_l&&p.dim_w&&p.dim_h?'\nDimensões: '+p.dim_l+'×'+p.dim_w+'×'+p.dim_h+' cm':''}"
+      >${esc(p.nome)}</td>
       <td>${esc(p.materialNome||'—')}</td>
       <td style="font-variant-numeric:tabular-nums;">${fmtTempo(p.tempo)}</td>
       <td style="font-variant-numeric:tabular-nums;">${p.peso}g</td>
