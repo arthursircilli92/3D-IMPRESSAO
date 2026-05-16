@@ -350,6 +350,13 @@ select{cursor:pointer;}
       <span style="width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;"></span>
       <span></span>
     </span>
+    <span id="hdr-user" style="font-size:12px;color:var(--t2);font-weight:600;display:none;align-items:center;gap:5px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span id="hdr-user-name"></span>
+    </span>
+    <button class="icon-btn" onclick="signOut()" id="logout-btn" title="Sair" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
     <span class="hdr-saved" id="last-saved">Não salvo</span>
     <button class="icon-btn" onclick="exportData()" title="Exportar backup JSON">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -795,19 +802,27 @@ select{cursor:pointer;}
 </main>
 </div>
 
-<!-- USERNAME MODAL -->
-<div class="modal-overlay" id="username-modal" style="background:rgba(0,0,0,.6);backdrop-filter:blur(4px);">
-  <div class="modal" style="max-width:400px;text-align:center;">
-    <div style="padding:32px 28px 24px;">
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="login-modal" style="background:rgba(0,0,0,.7);backdrop-filter:blur(4px);">
+  <div class="modal" style="max-width:380px;text-align:center;">
+    <div style="padding:32px 28px 28px;">
       <div style="width:52px;height:52px;background:var(--blue);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       </div>
-      <div style="font-size:18px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px;">Bem-vinda ao 3D Print</div>
-      <div style="font-size:13px;color:var(--t2);margin-bottom:24px;line-height:1.5;">Como você quer ser identificada?<br>Seu nome aparece para sua sócia quando você estiver online.</div>
-      <input type="text" id="username-input" placeholder="Ex: Ana, Maria..." maxlength="30"
-        style="text-align:center;font-size:15px;padding:10px 14px;margin-bottom:16px;"
-        onkeydown="if(event.key==='Enter')confirmUsername()">
-      <button class="btn btn-primary" onclick="confirmUsername()" style="width:100%;padding:11px;font-size:14px;font-weight:600;justify-content:center;">
+      <div style="font-size:18px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px;">3D Print — Acesso</div>
+      <div style="font-size:13px;color:var(--t2);margin-bottom:24px;">Entre com sua conta para continuar.</div>
+      <div class="field" style="text-align:left;margin-bottom:10px;">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="arthur@3d.com.br" autocomplete="email"
+          style="font-size:14px;" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+      </div>
+      <div class="field" style="text-align:left;margin-bottom:8px;">
+        <label>Senha</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"
+          style="font-size:14px;" onkeydown="if(event.key==='Enter')signIn()">
+      </div>
+      <div id="login-error" style="font-size:12px;color:var(--red);background:var(--red-s);border-radius:5px;padding:7px 10px;margin-bottom:12px;display:none;"></div>
+      <button class="btn btn-primary" id="login-btn" onclick="signIn()" style="width:100%;padding:11px;font-size:14px;font-weight:600;justify-content:center;margin-top:4px;">
         Entrar
       </button>
     </div>
@@ -846,8 +861,8 @@ const SUPABASE_URL = 'https://krtaoiybqxivdvuksjhi.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtydGFvaXlicXhpdmR2dWtzamhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjAzNzksImV4cCI6MjA5MzczNjM3OX0.j_sYEkaBO2wkrO_uoUVqqWksiol4g1B-UR-9Q-xpBYw';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const SESSION_ID = Math.random().toString(36).slice(2, 10);
-const USER_KEY = 'print3d_username';
-let userName = localStorage.getItem(USER_KEY) || '';
+let currentUser = null;
+function _userName(){ return currentUser ? (currentUser.email.split('@')[0].charAt(0).toUpperCase()+currentUser.email.split('@')[0].slice(1)) : 'Usuário'; }
 
 // ==================== STORAGE ====================
 const SK='print3d_v3';
@@ -2425,7 +2440,7 @@ function setupPresence() {
     })
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-        await presenceChannel.track({ user: userName, session: SESSION_ID });
+        await presenceChannel.track({ user: _userName(), session: SESSION_ID });
       }
     });
 }
@@ -2441,23 +2456,40 @@ function updatePresenceUI(others) {
   }
 }
 
-// ==================== USERNAME MODAL ====================
-function askUserName(){
-  return new Promise(resolve => {
-    document.getElementById('username-modal').classList.remove('hidden');
-    setTimeout(() => document.getElementById('username-input').focus(), 50);
-    window._resolveUserName = resolve;
-  });
+// ==================== AUTH ====================
+async function signIn(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const errEl=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  errEl.style.display='none';
+  btn.disabled=true;btn.textContent='Entrando...';
+  const{data,error}=await sb.auth.signInWithPassword({email,password});
+  btn.disabled=false;btn.textContent='Entrar';
+  if(error){
+    errEl.textContent='E-mail ou senha incorretos.';
+    errEl.style.display='block';
+    return;
+  }
+  currentUser=data.user;
+  _afterLogin();
 }
 
-function confirmUsername(){
-  const val = document.getElementById('username-input').value.trim();
-  if(!val) return;
-  document.getElementById('username-modal').classList.add('hidden');
-  if(window._resolveUserName){
-    window._resolveUserName(val);
-    window._resolveUserName = null;
-  }
+async function signOut(){
+  await sb.auth.signOut();
+  currentUser=null;
+  document.getElementById('hdr-user').style.display='none';
+  document.getElementById('logout-btn').style.display='none';
+  document.getElementById('login-modal').style.display='';
+  document.getElementById('login-password').value='';
+}
+
+function _afterLogin(){
+  document.getElementById('login-modal').style.display='none';
+  const hu=document.getElementById('hdr-user');
+  document.getElementById('hdr-user-name').textContent=_userName();
+  hu.style.display='flex';
+  document.getElementById('logout-btn').style.display='';
 }
 
 // ==================== GLOBAL TOOLTIP ====================
@@ -2497,12 +2529,19 @@ async function init(){
     _updateSbIcon(true);
   }
 
-  // Pede nome na primeira vez via modal bonito
-  if(!userName){
-    userName = await askUserName();
-    localStorage.setItem(USER_KEY, userName);
+  // Verifica sessão existente
+  const{data:{user}}=await sb.auth.getUser();
+  if(user){
+    currentUser=user;
+    _afterLogin();
   } else {
-    document.getElementById('username-modal').classList.add('hidden');
+    // Mostra login e aguarda
+    document.getElementById('login-modal').style.display='';
+    await new Promise(resolve=>{
+      const unsub=sb.auth.onAuthStateChange((_,session)=>{
+        if(session?.user){currentUser=session.user;unsub.data.subscription.unsubscribe();_afterLogin();resolve();}
+      });
+    });
   }
 
   loadFromLocalStorage();
