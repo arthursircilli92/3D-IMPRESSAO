@@ -378,6 +378,12 @@ select{cursor:pointer;}
 <!-- SIDEBAR -->
 <nav class="sidebar">
 <div class="sb-nav-top">
+  <div style="border-bottom:1px solid var(--border);margin-bottom:4px;padding-bottom:4px;">
+    <button class="sb-toggle-btn" id="sb-toggle-btn" onclick="toggleSidebar()" title="Recolher">
+      <svg id="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <span class="sb-toggle-lbl">Recolher</span>
+    </button>
+  </div>
   <div class="nav-group-label">Principal</div>
   <div class="nav-item active" data-tab="calcular" onclick="showTab('calcular',this)" title="Calcular">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><circle cx="8" cy="11" r=".5" fill="currentColor"/><circle cx="12" cy="11" r=".5" fill="currentColor"/><circle cx="16" cy="11" r=".5" fill="currentColor"/><circle cx="8" cy="15" r=".5" fill="currentColor"/><circle cx="12" cy="15" r=".5" fill="currentColor"/><line x1="16" y1="15" x2="16" y2="19"/><line x1="14" y1="17" x2="18" y2="17"/></svg>
@@ -410,12 +416,6 @@ select{cursor:pointer;}
     <span>Marketplaces</span>
   </div>
 </div><!-- sb-nav-top -->
-<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">
-  <button class="sb-toggle-btn" id="sb-toggle-btn" onclick="toggleSidebar()" title="Recolher">
-    <svg id="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    <span class="sb-toggle-lbl">Recolher</span>
-  </button>
-</div>
 </nav>
 
 <main class="main">
