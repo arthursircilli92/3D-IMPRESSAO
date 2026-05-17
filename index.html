@@ -937,9 +937,18 @@ function save() {
   try {
     createBackup();
     localStorage.setItem(SK, JSON.stringify(D));
-    document.getElementById('last-saved').textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR');
+    _setSaveStatus('saving');
   } catch(e) {}
   pushToSupabase();
+}
+
+function _setSaveStatus(state){
+  const el=document.getElementById('last-saved');
+  if(!el)return;
+  const hora=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  if(state==='saving') { el.textContent='Salvando...'; el.style.color=''; }
+  else if(state==='ok') { el.textContent='☁ Nuvem · '+hora; el.style.color='var(--green)'; }
+  else { el.textContent='⚠ Local · '+hora; el.style.color='var(--amber)'; }
 }
 
 async function pushToSupabase(attempt=1) {
@@ -955,15 +964,17 @@ async function pushToSupabase(attempt=1) {
         setTimeout(()=>pushToSupabase(attempt+1), 2000*attempt);
       } else {
         console.warn('Supabase save failed:', error);
-        toast('Nuvem indisponível. Salvo localmente — tentará novamente ao próxima ação.', '#d97706');
+        _setSaveStatus('error');
       }
+    } else {
+      _setSaveStatus('ok');
     }
   } catch(e) {
     if (attempt < 3) {
       setTimeout(()=>pushToSupabase(attempt+1), 2000*attempt);
     } else {
       console.warn('Supabase save failed:', e);
-      toast('Nuvem indisponível. Salvo localmente — tentará novamente na próxima ação.', '#d97706');
+      _setSaveStatus('error');
     }
   }
 }
