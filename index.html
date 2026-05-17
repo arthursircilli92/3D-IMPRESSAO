@@ -1670,7 +1670,7 @@ function recEmb(){
   const ml=l+1,mw=w+1,mh=h+1;
   const boxes=(D.embalagens_catalog||[])
     .filter(c=>boxFits(c,ml,mw,mh))
-    .sort((a,b)=>(a.dim_l*a.dim_w*a.dim_h)-(b.dim_l*b.dim_w*b.dim_h));
+    .sort((a,b)=>embCusto(a)-embCusto(b));
   if(!boxes.length){
     el.innerHTML=`<div style="font-size:12px;color:var(--t3);padding:6px 0;">Nenhuma caixa cadastrada com dimensões suficientes para ${ml}×${mw}×${mh}cm. Cadastre caixas com dimensões na aba Embalagens.</div>`;
     return;
