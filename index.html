@@ -942,7 +942,7 @@ function save() {
   pushToSupabase();
 }
 
-async function pushToSupabase() {
+async function pushToSupabase(attempt=1) {
   try {
     const { error } = await sb.from('app_data').upsert({
       id: 'main',
@@ -951,12 +951,20 @@ async function pushToSupabase() {
       updated_at: new Date().toISOString()
     });
     if (error) {
-      console.warn('Supabase save failed:', error);
-      toast('Aviso: sincronização com nuvem falhou. Dados salvos localmente.', '#d97706');
+      if (attempt < 3) {
+        setTimeout(()=>pushToSupabase(attempt+1), 2000*attempt);
+      } else {
+        console.warn('Supabase save failed:', error);
+        toast('Nuvem indisponível. Salvo localmente — tentará novamente ao próxima ação.', '#d97706');
+      }
     }
   } catch(e) {
-    console.warn('Supabase save failed:', e);
-    toast('Aviso: sincronização com nuvem falhou. Dados salvos localmente.', '#d97706');
+    if (attempt < 3) {
+      setTimeout(()=>pushToSupabase(attempt+1), 2000*attempt);
+    } else {
+      console.warn('Supabase save failed:', e);
+      toast('Nuvem indisponível. Salvo localmente — tentará novamente na próxima ação.', '#d97706');
+    }
   }
 }
 function toast(msg,bg='#1e293b'){
@@ -1752,8 +1760,8 @@ function saveProduct(){
   } else {
     const id=D.nextId++;
     D.catalog.push({id,code:code(id),...data,savedAt:new Date().toISOString()});
-    editingProduct=id;
     toast(`Salvo como ${code(id)}`,'#16a34a');
+    editingProduct=null;
   }
   save();updateProductIndicator();renderCatalog();
 }
