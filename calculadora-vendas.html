@@ -1293,13 +1293,13 @@
       linear-gradient(45deg, rgba(255,255,255,.16) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.16) 50%, rgba(255,255,255,.16) 75%, transparent 75%, transparent),
       linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 65%, white)) !important;
     background-size: 100% 100%, 20px 20px, 100% 100% !important;
-    box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--c) 28%, transparent);
     transition: width 1s cubic-bezier(.22,1,.36,1), --c .5s ease;
-    animation: glowBreath 2.4s ease-in-out infinite, stripesMove 1.1s linear infinite;
+    animation: glowBreath 3.2s ease-in-out infinite, stripesMove 1.1s linear infinite;
   }
   @keyframes glowBreath {
-    0%, 100% { box-shadow: 0 0 8px color-mix(in srgb, var(--c) 40%, transparent); }
-    50%      { box-shadow: 0 0 24px 2px color-mix(in srgb, var(--c) 85%, transparent); }
+    0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--c) 22%, transparent); }
+    50%      { box-shadow: 0 0 12px color-mix(in srgb, var(--c) 42%, transparent); }
   }
   @keyframes stripesMove {
     from { background-position: 0 0, 0 0, 0 0; }
@@ -1336,9 +1336,9 @@
   .donut-sweep {
     pointer-events: none;
     transform-origin: 18px 18px;
-    animation: donutSweep 3.6s linear infinite;
-    filter: blur(.35px) drop-shadow(0 0 1.5px rgba(255,255,255,.9));
-    mix-blend-mode: screen;
+    animation: donutSweep 6s linear infinite;
+    filter: blur(.6px);
+    opacity: .5;
   }
   @keyframes donutSweep { to { transform: rotate(360deg); } }
   .cost-donut-wrap { isolation: isolate; }
@@ -1927,7 +1927,7 @@
     const svg = $('cost-donut-svg'), leg = $('cost-legend');
     svg.innerHTML = DONUT.items.map((it, i) =>
       `<circle class="donut-slice" data-i="${i}" cx="18" cy="18" r="15.9155" fill="none" stroke="${it.color}" stroke-width="4" style="stroke-dasharray:0 100;stroke-dashoffset:0;--g:${it.color}"/>`
-    ).join('') + '<circle class="donut-sweep" cx="18" cy="18" r="15.9155" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="5 95" style="stroke-dashoffset:0"/>';
+    ).join('') + '<circle class="donut-sweep" cx="18" cy="18" r="15.9155" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="7 93" style="stroke-dashoffset:0"/>';
     leg.innerHTML = DONUT.items.map((it, i) =>
       `<div class="cost-legend-item" data-i="${i}">
         <span class="cost-legend-dot" style="background:${it.color};"></span>
