@@ -1355,6 +1355,27 @@
       transition-delay: 0ms !important;
     }
   }
+
+  /* ===== ÍCONES (substituem emojis) ===== */
+  .t-ico {
+    width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, currentColor 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent);
+  }
+  .escala-title { display: flex; align-items: center; gap: 8px; }
+  .t-ico-up { color: var(--success); }
+  .roas-verdict { display: flex; align-items: flex-start; gap: 12px; }
+  .roas-verdict .v-ico {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, currentColor 16%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent);
+  }
+  .roas-verdict .v-body { flex: 1; min-width: 0; }
+  .inl { display: inline-flex; align-items: center; gap: 4px; vertical-align: -2px; font-weight: 600; }
+  .inl.warn { color: var(--warning); }
+  .inl.ok { color: var(--success); }
 </style>
 </head>
 <body>
@@ -1385,7 +1406,7 @@
       <!-- ETAPA 1: PEÇA -->
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title title-peca"><span class="section-num">1</span> Peça</div>
+          <div class="panel-title title-peca"><span class="section-num">1</span><span class="t-ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span> Peça</div>
         </div>
         <div class="panel-body">
           <div class="field-grid">
@@ -1411,7 +1432,7 @@
       <!-- ETAPA 2: PRODUÇÃO -->
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title title-producao"><span class="section-num">2</span> Produção</div>
+          <div class="panel-title title-producao"><span class="section-num">2</span><span class="t-ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Produção</div>
         </div>
         <div class="panel-body">
           <div class="field-grid">
@@ -1484,7 +1505,7 @@
       <!-- ETAPA 3: ESTRATÉGIA -->
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title title-estrategia"><span class="section-num">3</span> Estratégia</div>
+          <div class="panel-title title-estrategia"><span class="section-num">3</span><span class="t-ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> Estratégia</div>
         </div>
         <div class="panel-body">
           <div class="field-grid">
@@ -1512,7 +1533,7 @@
       <!-- ETAPA 4: ADS & ROAS -->
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title title-ads"><span class="section-num">4</span> Ads & ROAS</div>
+          <div class="panel-title title-ads"><span class="section-num">4</span><span class="t-ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></span> Ads & ROAS</div>
         </div>
         <div class="panel-body">
           <div class="field-grid">
@@ -1607,7 +1628,7 @@
 
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title title-comparativo">Comparativo de canais</div>
+          <div class="panel-title title-comparativo"><span class="t-ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span> Comparativo de canais</div>
         </div>
         <div class="compare-grid" id="compare-grid">
           <!-- populado por JS -->
@@ -1617,9 +1638,9 @@
       <!-- Análise: donut + legenda lado a lado -->
       <div class="analysis" id="analysis">
         <div class="analysis-head">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-dim);">
+          <span class="t-ico" style="color: var(--accent);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-          </svg>
+          </svg></span>
           <div class="analysis-title">Análise</div>
         </div>
         <div id="cost-chart" style="display:none;">
@@ -1649,7 +1670,7 @@
     <!-- TABELA ROAS (dentro do main-grid, largura total) -->
     <div class="panel roas-full-panel">
       <div class="panel-head">
-        <div class="panel-title title-roas">📊 Simulador de ROAS & Ads</div>
+        <div class="panel-title title-roas"><span class="t-ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></span> Simulador de ROAS & Ads</div>
       </div>
       <div class="roas-section">
         <!-- Botões rápidos de margem -->
@@ -1721,7 +1742,7 @@
       </div>
       <!-- Simulador de Escala -->
       <div class="escala-section">
-        <div class="escala-title">📈 Simulador de Escala</div>
+        <div class="escala-title"><span class="t-ico t-ico-up"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span> Simulador de Escala</div>
         <div class="roas-table-wrap">
           <table class="roas-table">
             <thead>
@@ -1767,6 +1788,12 @@
   function num(id) { return parseFloat(document.getElementById(id).value) || 0; }
   function usd(v) { return '$' + v.toFixed(2); }
   const $ = id => document.getElementById(id);
+  const ICO = {"box": "<path d=\"M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\"/><polyline points=\"3.27 6.96 12 12.01 20.73 6.96\"/><line x1=\"12\" y1=\"22.08\" x2=\"12\" y2=\"12\"/>", "cog": "<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z\"/>", "target": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><circle cx=\"12\" cy=\"12\" r=\"6\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/>", "megaphone": "<path d=\"M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z\"/><path d=\"M15.5 8.5a5 5 0 0 1 0 7\"/><path d=\"M18.5 5.5a9 9 0 0 1 0 13\"/>", "bars": "<line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"10\"/><line x1=\"18\" y1=\"20\" x2=\"18\" y2=\"4\"/><line x1=\"6\" y1=\"20\" x2=\"6\" y2=\"16\"/>", "pie": "<path d=\"M21.21 15.89A10 10 0 1 1 8 2.83\"/><path d=\"M22 12A10 10 0 0 0 12 2v10z\"/>", "up": "<polyline points=\"23 6 13.5 15.5 8.5 10.5 1 18\"/><polyline points=\"17 6 23 6 23 12\"/>", "down": "<polyline points=\"23 18 13.5 8.5 8.5 13.5 1 6\"/><polyline points=\"17 18 23 18 23 12\"/>", "alert": "<path d=\"M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/>", "info": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"/>", "zap": "<polygon points=\"13 2 3 14 12 14 11 22 21 10 12 10 13 2\"/>", "check": "<path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"/><polyline points=\"22 4 12 14.01 9 11.01\"/>"};
+  function ico(n, size) {
+    size = size || 14;
+    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[n]}</svg>`;
+  }
+  function vBox(n, html) { return `<span class="v-ico">${ico(n, 15)}</span><div class="v-body">${html}</div>`; }
 
   // ===== ANIMAÇÕES: contadores, flash =====
   const REDUCED = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -2180,28 +2207,28 @@
 
     // Veredito (baseado no ROAS ATUAL = preço ÷ CPA, comparado ao breakeven)
     const verdictEl = document.getElementById('roas-verdict');
-    verdictEl.style.display = 'block';
+    verdictEl.style.display = 'flex';
     verdictEl.className = 'roas-verdict';
     let vCls, vHtml;
     const margemAds = res.preco > 0 ? (lucroPosAds / res.preco) * 100 : 0;
     if (!isFinite(roasMin) || res.inviavel) {
       vCls = 'danger';
-      vHtml = '<strong>⚠️ Inviável com ads.</strong> O produto não gera margem suficiente para pagar tráfego pago. Reduza custos ou aumente o preço antes de investir em ads.';
+      vHtml = vBox('alert', '<strong>Inviável com ads.</strong> O produto não gera margem suficiente para pagar tráfego pago. Reduza custos ou aumente o preço antes de investir em ads.');
     } else if (!adsValido) {
       vCls = 'warning';
-      vHtml = '<strong>ℹ️ Preencha CPC e CVR</strong> (ou use o CPA manual) para ver a simulação com ads.';
+      vHtml = vBox('info', '<strong>Preencha CPC e CVR</strong> (ou use o CPA manual) para ver a simulação com ads.');
     } else if (lucroPosAds < 0) {
       vCls = 'danger';
-      vHtml = `<strong>🔴 Prejuízo com ads.</strong> ROAS atual de ${roasAtual.toFixed(2)}x está abaixo do breakeven de ${roasMin.toFixed(2)}x: cada venda perde ${usd(-lucroPosAds)} (CPA de ${usd(cpa)}). Projeção: <strong>${usd(lucroMensal)}/mês</strong>. Suba o CVR, baixe o CPC ou aumente o preço.`;
+      vHtml = vBox('down', `<strong>Prejuízo com ads.</strong> ROAS atual de ${roasAtual.toFixed(2)}x está abaixo do breakeven de ${roasMin.toFixed(2)}x: cada venda perde ${usd(-lucroPosAds)} (CPA de ${usd(cpa)}). Projeção: <strong>${usd(lucroMensal)}/mês</strong>. Suba o CVR, baixe o CPC ou aumente o preço.`);
     } else if (roasAtual < roasMin * 1.5) {
       vCls = 'warning';
-      vHtml = `<strong>⚡ Lucra, mas no limite.</strong> ROAS atual de ${roasAtual.toFixed(2)}x vs breakeven de ${roasMin.toFixed(2)}x. Sobram ${usd(lucroPosAds)} por venda (${margemAds.toFixed(1)}% após ads), cerca de <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. Para ter folga, suba o CVR ou baixe o CPC.`;
+      vHtml = vBox('zap', `<strong>Lucra, mas no limite.</strong> ROAS atual de ${roasAtual.toFixed(2)}x vs breakeven de ${roasMin.toFixed(2)}x. Sobram ${usd(lucroPosAds)} por venda (${margemAds.toFixed(1)}% após ads), cerca de <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. Para ter folga, suba o CVR ou baixe o CPC.`);
     } else if (roasAtual < roasMin * 3) {
       vCls = 'success';
-      vHtml = `<strong>✅ Saudável!</strong> ROAS atual de ${roasAtual.toFixed(2)}x (breakeven ${roasMin.toFixed(2)}x). Projeção: <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. CPA de ${usd(cpa)} deixa margem de ${margemAds.toFixed(1)}% após ads.`;
+      vHtml = vBox('check', `<strong>Saudável!</strong> ROAS atual de ${roasAtual.toFixed(2)}x (breakeven ${roasMin.toFixed(2)}x). Projeção: <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. CPA de ${usd(cpa)} deixa margem de ${margemAds.toFixed(1)}% após ads.`);
     } else {
       vCls = 'success';
-      vHtml = `<strong>🚀 Excelente!</strong> ROAS atual de ${roasAtual.toFixed(2)}x, bem acima do breakeven de ${roasMin.toFixed(2)}x. Projeção: <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. Vale testar escalar o orçamento.`;
+      vHtml = vBox('up', `<strong>Excelente!</strong> ROAS atual de ${roasAtual.toFixed(2)}x, bem acima do breakeven de ${roasMin.toFixed(2)}x. Projeção: <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. Vale testar escalar o orçamento.`);
     }
     verdictEl.classList.add(vCls);
     verdictEl.innerHTML = vHtml;
@@ -2257,7 +2284,7 @@
     if (res.inviavel || res.lucro <= 0) {
       linhas.push(`<p>Inviável via <strong>${canal.nome}</strong>. Taxas consomem ${((res.taxas/(res.preco||1))*100).toFixed(1)}%. Reduza custos ou mude de canal.</p>`);
     } else {
-      linhas.push(`<p>Via <strong>${canal.nome}</strong>: preço <strong>${usd(res.preco)}</strong>, lucro <strong>${usd(res.lucro)}</strong> (${res.margemReal.toFixed(1)}%), <strong>${usd(lph)}/h</strong>${lph < 15 ? ' ⚠️ abaixo de $15/h' : ' ✅'}.</p>`);
+      linhas.push(`<p>Via <strong>${canal.nome}</strong>: preço <strong>${usd(res.preco)}</strong>, lucro <strong>${usd(res.lucro)}</strong> (${res.margemReal.toFixed(1)}%), <strong>${usd(lph)}/h</strong>${lph < 15 ? ` <span class="inl warn">${ico('alert', 13)} abaixo de $15/h</span>` : ` <span class="inl ok">${ico('check', 13)}</span>`}.</p>`);
     }
 
     if (comparados.length > 1) {
