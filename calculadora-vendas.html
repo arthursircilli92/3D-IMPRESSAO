@@ -1262,6 +1262,99 @@
     .compare-grid { grid-template-columns: 1fr; }
     .roas-kpi-row { flex-direction: column; }
   }
+
+  /* ===== ANIMAÇÕES (v4) ===== */
+  @property --c { syntax: '<color>'; inherits: true; initial-value: #d97706; }
+
+  @keyframes panelIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .left-stack > *, .right-stack > *, .roas-full-panel {
+    animation: panelIn .55s cubic-bezier(.2,.7,.2,1) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+  .panel { transition: border-color .3s ease, box-shadow .3s ease; }
+  .panel:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+
+  @keyframes flash { 0% { transform: scale(1); } 35% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  .flash { animation: flash .55s ease; transform-origin: left center; }
+  .hero-value, .metric-value, .roas-kpi-value, .projection-value, .score-value, .cost-donut-center .value {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Score */
+  .score-bar { height: 6px; border-radius: 3px; overflow: visible; position: relative; }
+  .score-fill {
+    position: relative;
+    overflow: hidden;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 65%, white)) !important;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--c) 55%, transparent);
+    transition: width 1s cubic-bezier(.22,1,.36,1), --c .5s ease;
+  }
+  .score-fill::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.6) 50%, transparent 100%);
+    transform: translateX(-100%);
+    animation: shimmer 2.6s ease-in-out 1.2s infinite;
+  }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 60%, 100% { transform: translateX(100%); } }
+
+  /* Donut */
+  .donut-slice {
+    cursor: pointer;
+    transition: stroke-dasharray .9s cubic-bezier(.22,1,.36,1), stroke-dashoffset .9s cubic-bezier(.22,1,.36,1),
+                transform .25s ease, stroke-width .25s ease, opacity .25s ease;
+  }
+  .analysis-layout.has-active .donut-slice:not(.active) { opacity: .3; }
+  .analysis-layout.has-active .cost-legend-item:not(.active) { opacity: .45; }
+  .cost-legend-item {
+    padding: 3px 6px; margin: -3px -6px; border-radius: 6px;
+    transition: background .2s ease, opacity .2s ease, transform .2s ease;
+  }
+  .cost-legend-item.active { background: var(--surface-2); transform: translateX(3px); }
+  .cost-donut-center { transition: color .2s ease; }
+  .cost-donut-center .sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--text-muted);
+    margin-top: 1px; min-height: 0;
+  }
+  .cost-donut-center .sub:empty { display: none; }
+
+  /* Comparativo de canais */
+  .compare-col { transition: transform .25s ease, box-shadow .25s ease; }
+  .compare-col:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.18); z-index: 1; }
+  @keyframes badgePulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 55%, transparent); }
+    50% { box-shadow: 0 0 0 6px transparent; }
+  }
+  .compare-col.best::before { animation: badgePulse 2.4s ease-in-out infinite; }
+  .compare-bar { height: 3px; border-radius: 2px; background: var(--border); margin-top: 10px; overflow: hidden; }
+  .compare-bar > span {
+    display: block; height: 100%; width: 0; border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width .8s cubic-bezier(.22,1,.36,1);
+  }
+  .compare-col.best .compare-bar > span {
+    background: linear-gradient(90deg, var(--success), color-mix(in srgb, var(--success) 60%, white));
+  }
+
+  /* Simulador de ROAS */
+  @keyframes rowGlow {
+    0%, 100% { box-shadow: inset 0 0 0 999px rgba(99,102,241,0); }
+    50% { box-shadow: inset 0 0 0 999px rgba(99,102,241,.14); }
+  }
+  .roas-table tr.active-row td { animation: rowGlow 2.4s ease-in-out infinite; }
+  @keyframes verdictIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .roas-verdict.verdict-in { animation: verdictIn .45s ease both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0ms !important;
+      transition-duration: .001ms !important;
+      transition-delay: 0ms !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1536,6 +1629,7 @@
               <div class="cost-donut-center">
                 <div class="label">Custo total</div>
                 <div class="value" id="cost-donut-total">—</div>
+                <div class="sub" id="cost-donut-sub"></div>
               </div>
             </div>
             <div class="cost-legend" id="cost-legend"></div>
@@ -1582,7 +1676,7 @@
           <input type="number" id="cpa_manual" value="5.00" min="0.01" step="0.50" style="width:90px;padding:6px 8px;font-size:13px;" oninput="calcular()">
         </div>
         <div id="cpa-auto-hint" style="font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">
-          CPA = CPC ÷ (CTR × CVR)
+          CPA = CPC ÷ CVR
         </div>
       </div>
       <!-- KPIs resumidos -->
@@ -1672,6 +1766,164 @@
   // ===== HELPERS =====
   function num(id) { return parseFloat(document.getElementById(id).value) || 0; }
   function usd(v) { return '$' + v.toFixed(2); }
+  const $ = id => document.getElementById(id);
+
+  // ===== ANIMAÇÕES: contadores, flash =====
+  const REDUCED = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const FMT = {
+    usd: usd,
+    negusd: v => '-' + usd(v),
+    pct: v => v.toFixed(1) + '%',
+    int: v => String(Math.round(v))
+  };
+  const counterCache = {};
+
+  function animateNumber(el, to, fmt, dur, from) {
+    cancelAnimationFrame(el._raf);
+    const start = (typeof from === 'number') ? from : (typeof el._val === 'number' ? el._val : 0);
+    if (REDUCED || start === to) { el.textContent = fmt(to); el._val = to; return; }
+    const t0 = performance.now();
+    const step = now => {
+      const p = Math.min((now - t0) / dur, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      const v = start + (to - start) * e;
+      el.textContent = fmt(v);
+      el._val = v;
+      if (p < 1) el._raf = requestAnimationFrame(step);
+      else { el._val = to; el.textContent = fmt(to); }
+    };
+    el._raf = requestAnimationFrame(step);
+  }
+
+  function flash(el) {
+    if (REDUCED) return;
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+
+  // Atualiza um elemento numérico com contagem animada. Se o valor não for finito, mostra o fallback.
+  function setNum(id, to, fmt, opts) {
+    const el = $(id);
+    if (!el) return;
+    opts = opts || {};
+    if (!isFinite(to)) {
+      cancelAnimationFrame(el._raf);
+      el._val = undefined; el._target = undefined;
+      el.textContent = opts.fallback || '—';
+      return;
+    }
+    if (opts.flash && typeof el._target === 'number' && Math.abs(el._target - to) > 0.005) flash(el);
+    el._target = to;
+    animateNumber(el, to, fmt || usd, 500);
+  }
+
+  // Contadores em células geradas por innerHTML (tabelas); usa cache por chave pra não recontar do zero
+  function runCounters(root) {
+    root.querySelectorAll('[data-count]').forEach(el => {
+      const key = el.dataset.key;
+      const to = parseFloat(el.dataset.count);
+      const from = (key in counterCache) ? counterCache[key] : 0;
+      counterCache[key] = to;
+      animateNumber(el, to, FMT[el.dataset.fmt] || usd, 550, from);
+    });
+  }
+  function cnt(key, val, fmt) {
+    return `data-key="${key}" data-count="${val}" data-fmt="${fmt}"`;
+  }
+
+  // ===== DONUT (persistente: criado uma vez, atualizado com transições) =====
+  const DONUT = {
+    items: [
+      { label: 'Filamento', color: '#3b82f6' },
+      { label: 'Energia',   color: '#f59e0b' },
+      { label: 'Máquina',   color: '#8b5cf6' },
+      { label: 'Embalagem', color: '#ec4899' },
+      { label: 'Falhas',    color: '#ef4444' }
+    ],
+    vals: [0, 0, 0, 0, 0], total: 0, active: null, drawn: false
+  };
+
+  function buildDonut() {
+    const svg = $('cost-donut-svg'), leg = $('cost-legend');
+    svg.innerHTML = DONUT.items.map((it, i) =>
+      `<circle class="donut-slice" data-i="${i}" cx="18" cy="18" r="15.9155" fill="none" stroke="${it.color}" stroke-width="4" style="stroke-dasharray:0 100;stroke-dashoffset:0"/>`
+    ).join('');
+    leg.innerHTML = DONUT.items.map((it, i) =>
+      `<div class="cost-legend-item" data-i="${i}">
+        <span class="cost-legend-dot" style="background:${it.color};"></span>
+        <span class="cost-legend-label">${it.label}</span>
+        <span class="cost-legend-value">$0.00</span>
+        <span class="cost-legend-pct">0.0%</span>
+      </div>`
+    ).join('');
+    svg.addEventListener('pointerover', e => { const c = e.target.closest('.donut-slice'); if (c) setActiveSlice(+c.dataset.i); });
+    svg.addEventListener('pointerout',  e => { if (e.target.closest('.donut-slice')) setActiveSlice(null); });
+    leg.addEventListener('pointerover', e => { const it = e.target.closest('.cost-legend-item'); if (it) setActiveSlice(+it.dataset.i); });
+    leg.addEventListener('pointerleave', () => setActiveSlice(null));
+  }
+
+  function setActiveSlice(i) {
+    DONUT.active = i;
+    const circles = $('cost-donut-svg').querySelectorAll('.donut-slice');
+    const items = $('cost-legend').querySelectorAll('.cost-legend-item');
+    circles.forEach((c, k) => {
+      const on = k === i;
+      c.classList.toggle('active', on);
+      c.style.transform = on ? `translate(${c._dx || 0}px, ${c._dy || 0}px)` : '';
+      c.style.strokeWidth = on ? '5' : '';
+    });
+    items.forEach((it, k) => it.classList.toggle('active', k === i));
+    const layout = $('cost-chart').querySelector('.analysis-layout');
+    if (layout) layout.classList.toggle('has-active', i !== null);
+    const label = document.querySelector('.cost-donut-center .label');
+    const val = $('cost-donut-total'), sub = $('cost-donut-sub');
+    if (i !== null && DONUT.total > 0) {
+      const v = DONUT.vals[i];
+      label.textContent = DONUT.items[i].label;
+      label.style.color = DONUT.items[i].color;
+      cancelAnimationFrame(val._raf);
+      val.textContent = usd(v); val._val = v;
+      sub.textContent = (v / DONUT.total * 100).toFixed(1) + '%';
+    } else {
+      label.textContent = 'Custo total';
+      label.style.color = '';
+      sub.textContent = '';
+      animateNumber(val, DONUT.total, usd, 300);
+    }
+  }
+
+  function updateDonut(vals, total) {
+    const svg = $('cost-donut-svg');
+    const circles = svg.querySelectorAll('.donut-slice');
+    const items = $('cost-legend').querySelectorAll('.cost-legend-item');
+    const first = !DONUT.drawn;
+    DONUT.vals = vals; DONUT.total = total;
+    let cum = 0;
+    circles.forEach((c, i) => {
+      const pct = vals[i] / total * 100;
+      const dash = Math.max(pct - 0.5, 0);           // pequena folga entre as fatias
+      c.style.transitionDelay = first ? (350 + i * 90) + 'ms' : '0ms';
+      c.style.strokeDasharray = `${dash} ${100 - dash}`;
+      c.style.strokeDashoffset = String(-(cum + 0.25));
+      const mid = (cum + pct / 2) / 100 * 2 * Math.PI; // ângulo no sistema do SVG (já rotacionado -90°)
+      c._dx = Math.cos(mid) * 1.1;
+      c._dy = Math.sin(mid) * 1.1;
+      cum += pct;
+      const it = items[i];
+      animateNumber(it.querySelector('.cost-legend-value'), vals[i], usd, 500);
+      animateNumber(it.querySelector('.cost-legend-pct'), pct, FMT.pct, 500);
+    });
+    if (first) {
+      DONUT.drawn = true;
+      setTimeout(() => circles.forEach(c => { c.style.transitionDelay = '0ms'; }), 1600);
+    }
+    if (DONUT.active === null) animateNumber($('cost-donut-total'), total, usd, 500);
+    else setActiveSlice(DONUT.active);
+  }
+
+  // ===== COMPARATIVO: barras de lucro/hora (guarda largura anterior por canal) =====
+  const compareBarPrev = {};
 
   // ===== MARGIN PRESETS & CPA TOGGLE =====
   let cpaMode = 'auto'; // 'auto' ou 'manual'
@@ -1758,23 +2010,24 @@
     const lph = tempoTotalH > 0 ? res.lucro / tempoTotalH : 0;
 
     // Render principal
-    document.getElementById('r-preco').textContent = res.inviavel ? '—' : usd(res.preco);
+    setNum('r-preco', res.inviavel ? NaN : res.preco, usd, { flash: true });
     document.getElementById('r-canal-nome').textContent = 'via ' + canal.nome;
-    document.getElementById('r-custo').textContent = usd(custoBase);
+    setNum('r-custo', custoBase, usd);
     const lucroEl = document.getElementById('r-lucro');
-    lucroEl.textContent = usd(res.lucro);
+    const lucroArrow = res.lucro >= 0 ? '↑ ' : '↓ ';
+    setNum('r-lucro', res.lucro, v => lucroArrow + usd(v), { flash: true });
     lucroEl.classList.toggle('positive', res.lucro >= 0);
     lucroEl.classList.toggle('negative', res.lucro < 0);
-    document.getElementById('r-lph').textContent = usd(lph) + '/h';
+    setNum('r-lph', lph, v => usd(v) + '/h');
 
     // Breakdown
-    document.getElementById('r-fil').textContent = usd(cFil);
-    document.getElementById('r-ener').textContent = usd(cEner);
-    document.getElementById('r-maq').textContent = usd(cMaq);
-    document.getElementById('r-emb').textContent = usd(cEmb);
-    document.getElementById('r-falha').textContent = usd(cFalha);
-    document.getElementById('r-taxas').textContent = usd(res.taxas);
-    document.getElementById('r-total-ded').textContent = usd(custoBase + res.taxas);
+    setNum('r-fil', cFil);
+    setNum('r-ener', cEner);
+    setNum('r-maq', cMaq);
+    setNum('r-emb', cEmb);
+    setNum('r-falha', cFalha);
+    setNum('r-taxas', res.taxas);
+    setNum('r-total-ded', custoBase + res.taxas);
 
     // Chip de status
     const chip = document.getElementById('r-chip');
@@ -1799,60 +2052,26 @@
     }
     const scoreFill = document.getElementById('r-score-fill');
     const scoreNum = document.getElementById('r-score-num');
+    const firstScore = !scoreFill._ready;
+    scoreFill.style.transitionDelay = firstScore ? '350ms' : '0ms';
+    void scoreFill.offsetWidth; // garante a transição de 0% até o valor na primeira renderização
+    scoreFill._ready = true;
     scoreFill.style.width = score + '%';
-    scoreNum.textContent = score + ' / 100';
-    if (score >= 70) {
-      scoreFill.style.background = 'var(--success)';
-      scoreNum.style.color = 'var(--success)';
-    } else if (score >= 40) {
-      scoreFill.style.background = 'var(--warning)';
-      scoreNum.style.color = 'var(--warning)';
-    } else {
-      scoreFill.style.background = 'var(--danger)';
-      scoreNum.style.color = 'var(--danger)';
-    }
+    setNum('r-score-num', score, v => Math.round(v) + ' / 100');
+    const scoreColor = score >= 70 ? 'var(--success)' : (score >= 40 ? 'var(--warning)' : 'var(--danger)');
+    scoreFill.style.setProperty('--c', scoreColor);
+    scoreNum.style.color = scoreColor;
 
     // ===== GRÁFICO DE COMPOSIÇÃO DE CUSTOS (DONUT) =====
-    const costItems = [
-      { label: 'Filamento', value: cFil, color: '#3b82f6' },
-      { label: 'Energia', value: cEner, color: '#f59e0b' },
-      { label: 'Máquina', value: cMaq, color: '#8b5cf6' },
-      { label: 'Embalagem', value: cEmb, color: '#ec4899' },
-      { label: 'Falhas', value: cFalha, color: '#ef4444' }
-    ];
     const totalCost = custoBase;
     const chartEl = document.getElementById('cost-chart');
-    const svgEl = document.getElementById('cost-donut-svg');
-    const totalEl = document.getElementById('cost-donut-total');
-    const legendEl = document.getElementById('cost-legend');
-
     if (totalCost > 0) {
+      const wasHidden = chartEl.style.display === 'none';
       chartEl.style.display = 'block';
       const layoutEl = chartEl.querySelector('.analysis-layout');
       if (layoutEl) layoutEl.style.display = 'flex';
-      totalEl.textContent = usd(totalCost);
-
-      // Render donut segments using SVG circle stroke-dasharray
-      const radius = 15.9155; // circumference ≈ 100 for easy percentage mapping
-      let cumulativePct = 0;
-
-      svgEl.innerHTML = costItems.map(item => {
-        const pct = (item.value / totalCost) * 100;
-        const dashArray = `${pct} ${100 - pct}`;
-        const dashOffset = 100 - cumulativePct + 25; // +25 to start at 12 o'clock
-        cumulativePct += pct;
-        return `<circle cx="18" cy="18" r="${radius}" fill="transparent" stroke="${item.color}" stroke-width="4" stroke-dasharray="${dashArray}" stroke-dashoffset="${dashOffset}" />`;
-      }).join('');
-
-      legendEl.innerHTML = costItems.map(item => {
-        const pct = (item.value / totalCost) * 100;
-        return `<div class="cost-legend-item">
-          <span class="cost-legend-dot" style="background:${item.color};"></span>
-          <span class="cost-legend-label">${item.label}</span>
-          <span class="cost-legend-value">${usd(item.value)}</span>
-          <span class="cost-legend-pct">${pct.toFixed(1)}%</span>
-        </div>`;
-      }).join('');
+      if (wasHidden) void $('cost-donut-svg').getBoundingClientRect(); // flush: permite a animação de desenho
+      updateDonut([cFil, cEner, cMaq, cEmb, cFalha], totalCost);
     } else {
       chartEl.style.display = 'none';
     }
@@ -1863,24 +2082,33 @@
     const cvr = num('cvr') / 100;
     const vendasMes = num('vendas_mes');
 
-    // CPA: usa valor manual se modo 'manual' estiver ativo, senão calcula via CPC/(CTR*CVR)
-    const cpa = (cpaMode === 'manual') ? num('cpa_manual') : ((ctr > 0 && cvr > 0) ? cpc / (ctr * cvr) : 0);
+    // CPA: valor manual (modo 'manual') ou CPC ÷ CVR. O CTR NÃO entra: já está embutido no CPC
+    // (só define quantas impressões são necessárias pra gerar os cliques).
+    const cpa = (cpaMode === 'manual') ? num('cpa_manual') : (cvr > 0 ? cpc / cvr : 0);
+    const adsValido = cpa > 0;
     const lucroAntesAds = res.lucro;
     const roasMin = (lucroAntesAds > 0 && res.preco > 0) ? res.preco / lucroAntesAds : Infinity;
     const lucroPosAds = lucroAntesAds - cpa;
-    const roasAlvo = (lucroPosAds > 0 && res.preco > 0) ? res.preco / lucroPosAds : Infinity;
+    // ROAS atual = quanto fatura por $1 gasto em ads (preço ÷ CPA)
+    const roasAtual = (adsValido && res.preco > 0) ? res.preco / cpa : Infinity;
     const lucroMensal = lucroPosAds * vendasMes;
 
+    const hintEl = document.getElementById('cpa-auto-hint');
+    if (hintEl) {
+      const imps = (ctr > 0 && cvr > 0) ? Math.round(1 / (ctr * cvr)).toLocaleString('pt-BR') : null;
+      hintEl.textContent = 'CPA = CPC ÷ CVR' + (imps ? ' · ≈ ' + imps + ' impressões por venda' : '');
+    }
+
     // Render KPIs
-    document.getElementById('r-cpa').textContent = cpa > 0 ? usd(cpa) : '—';
-    document.getElementById('r-roas-min').textContent = isFinite(roasMin) ? roasMin.toFixed(2) + 'x' : '∞';
+    setNum('r-cpa', adsValido ? cpa : NaN, usd);
+    setNum('r-roas-min', roasMin, v => v.toFixed(2) + 'x', { fallback: '∞' });
     const lucroAdsKpi = document.getElementById('r-lucro-ads');
-    lucroAdsKpi.textContent = isFinite(lucroPosAds) ? usd(lucroPosAds) : '—';
+    setNum('r-lucro-ads', lucroPosAds, usd, { flash: true });
     lucroAdsKpi.style.color = lucroPosAds >= 0 ? '#3b82f6' : 'var(--danger)';
 
     document.getElementById('r-vendas-mes-label').textContent = vendasMes;
     const lucroMesEl = document.getElementById('r-lucro-mes');
-    lucroMesEl.textContent = isFinite(lucroMensal) ? usd(lucroMensal) : '—';
+    setNum('r-lucro-mes', lucroMensal, usd, { flash: true });
     lucroMesEl.style.color = lucroMensal >= 0 ? '#3b82f6' : 'var(--danger)';
 
     // Tabela dinâmica de faixas de ROAS
@@ -1904,22 +2132,23 @@
     if (!isFinite(roasMin) || res.inviavel || lucroAntesAds <= 0) {
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:16px;font-weight:600;">Produto inviável com ads — margem insuficiente para cobrir CPA.</td></tr>';
     } else {
-      tbody.innerHTML = faixas.map(f => {
+      tbody.innerHTML = faixas.map((f, fi) => {
         const roasMid = f.max === Infinity ? f.min + 2 : (f.min + f.max) / 2;
         const cpaFaixa = res.preco / roasMid;
         const lucroFaixa = lucroAntesAds - cpaFaixa;
         const margemFaixa = res.preco > 0 ? (lucroFaixa / res.preco) * 100 : 0;
         const lucroMesFaixa = lucroFaixa * vendasMes;
-        const isActive = isFinite(roasAlvo) && roasAlvo >= f.min && roasAlvo < f.max;
+        const isActive = isFinite(roasAtual) && (fi === 0 ? roasAtual < f.max : (roasAtual >= f.min && roasAtual < f.max));
         const rowCls = `roas-row-${f.cls}${isActive ? ' active-row' : ''}`;
         return `<tr class="${rowCls}">
           <td><span class="roas-band ${f.band}"></span>${f.label}</td>
           <td>${f.desc}</td>
-          <td style="color:${lucroFaixa >= 0 ? 'var(--text)' : 'var(--danger)'}">${usd(lucroFaixa)}</td>
-          <td>${margemFaixa.toFixed(1)}%</td>
-          <td style="font-weight:700;color:${lucroMesFaixa >= 0 ? '#3b82f6' : 'var(--danger)'}">${usd(lucroMesFaixa)}</td>
+          <td style="color:${lucroFaixa >= 0 ? 'var(--text)' : 'var(--danger)'}" ${cnt('faixa-' + fi + '-l', lucroFaixa, 'usd')}>${usd(lucroFaixa)}</td>
+          <td ${cnt('faixa-' + fi + '-m', margemFaixa, 'pct')}>${margemFaixa.toFixed(1)}%</td>
+          <td style="font-weight:700;color:${lucroMesFaixa >= 0 ? '#3b82f6' : 'var(--danger)'}" ${cnt('faixa-' + fi + '-mes', lucroMesFaixa, 'usd')}>${usd(lucroMesFaixa)}</td>
         </tr>`;
       }).join('');
+      runCounters(tbody);
     }
 
     // Simulador de Escala
@@ -1938,35 +2167,49 @@
         const custoAds = cpa * vMes;
         return `<tr>
           <td style="font-weight:600;">${c.label}</td>
-          <td>${vMes}</td>
-          <td>${usd(receita)}</td>
-          <td style="color:var(--danger)">-${usd(custoAds)}</td>
-          <td style="font-weight:700;color:${lMes >= 0 ? '#3b82f6' : 'var(--danger)'}">${usd(lMes)}</td>
+          <td ${cnt('esc-' + c.mult + '-v', vMes, 'int')}>${vMes}</td>
+          <td ${cnt('esc-' + c.mult + '-r', receita, 'usd')}>${usd(receita)}</td>
+          <td style="color:var(--danger)" ${cnt('esc-' + c.mult + '-a', custoAds, 'negusd')}>-${usd(custoAds)}</td>
+          <td style="font-weight:700;color:${lMes >= 0 ? '#3b82f6' : 'var(--danger)'}" ${cnt('esc-' + c.mult + '-l', lMes, 'usd')}>${usd(lMes)}</td>
         </tr>`;
       }).join('');
+      runCounters(escalaBody);
     } else if (escalaBody) {
       escalaBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px;">Ajuste os parâmetros para ver projeções de escala.</td></tr>';
     }
 
-    // Veredito
+    // Veredito (baseado no ROAS ATUAL = preço ÷ CPA, comparado ao breakeven)
     const verdictEl = document.getElementById('roas-verdict');
     verdictEl.style.display = 'block';
     verdictEl.className = 'roas-verdict';
+    let vCls, vHtml;
+    const margemAds = res.preco > 0 ? (lucroPosAds / res.preco) * 100 : 0;
     if (!isFinite(roasMin) || res.inviavel) {
-      verdictEl.classList.add('danger');
-      verdictEl.innerHTML = '<strong>⚠️ Inviável com ads.</strong> O produto não gera margem suficiente para pagar tráfego pago. Reduza custos ou aumente o preço antes de investir em ads.';
-    } else if (!isFinite(roasAlvo) || lucroPosAds <= 0) {
-      verdictEl.classList.add('warning');
-      verdictEl.innerHTML = `<strong>⚡ ROAS breakeven: ${roasMin.toFixed(2)}x</strong> — qualquer ROAS abaixo disso dá prejuízo. Com CPA de ${usd(cpa)}, não sobra margem. Otimize criativos e segmentação.`;
-    } else if (roasAlvo <= 3) {
-      verdictEl.classList.add('success');
-      verdictEl.innerHTML = `<strong>✅ Saudável!</strong> ROAS alvo de ${roasAlvo.toFixed(2)}x é atingível. Projeção: <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. CPA de ${usd(cpa)} deixa margem de ${((lucroPosAds/res.preco)*100).toFixed(1)}% após ads.`;
-    } else if (roasAlvo <= 5) {
-      verdictEl.classList.add('warning');
-      verdictEl.innerHTML = `<strong>Apertado.</strong> ROAS alvo de ${roasAlvo.toFixed(2)}x exige campanha bem otimizada. Projeção: <strong>${usd(lucroMensal)}/mês</strong>. Considere aumentar ticket médio ou reduzir CPA.`;
+      vCls = 'danger';
+      vHtml = '<strong>⚠️ Inviável com ads.</strong> O produto não gera margem suficiente para pagar tráfego pago. Reduza custos ou aumente o preço antes de investir em ads.';
+    } else if (!adsValido) {
+      vCls = 'warning';
+      vHtml = '<strong>ℹ️ Preencha CPC e CVR</strong> (ou use o CPA manual) para ver a simulação com ads.';
+    } else if (lucroPosAds < 0) {
+      vCls = 'danger';
+      vHtml = `<strong>🔴 Prejuízo com ads.</strong> ROAS atual de ${roasAtual.toFixed(2)}x está abaixo do breakeven de ${roasMin.toFixed(2)}x: cada venda perde ${usd(-lucroPosAds)} (CPA de ${usd(cpa)}). Projeção: <strong>${usd(lucroMensal)}/mês</strong>. Suba o CVR, baixe o CPC ou aumente o preço.`;
+    } else if (roasAtual < roasMin * 1.5) {
+      vCls = 'warning';
+      vHtml = `<strong>⚡ Lucra, mas no limite.</strong> ROAS atual de ${roasAtual.toFixed(2)}x vs breakeven de ${roasMin.toFixed(2)}x. Sobram ${usd(lucroPosAds)} por venda (${margemAds.toFixed(1)}% após ads), cerca de <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. Para ter folga, suba o CVR ou baixe o CPC.`;
+    } else if (roasAtual < roasMin * 3) {
+      vCls = 'success';
+      vHtml = `<strong>✅ Saudável!</strong> ROAS atual de ${roasAtual.toFixed(2)}x (breakeven ${roasMin.toFixed(2)}x). Projeção: <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. CPA de ${usd(cpa)} deixa margem de ${margemAds.toFixed(1)}% após ads.`;
     } else {
-      verdictEl.classList.add('danger');
-      verdictEl.innerHTML = `<strong>🔴 Difícil.</strong> ROAS alvo de ${roasAlvo.toFixed(2)}x é alto demais para a maioria dos nichos. Projeção: <strong>${usd(lucroMensal)}/mês</strong>. Reavalie custos ou canal de venda.`;
+      vCls = 'success';
+      vHtml = `<strong>🚀 Excelente!</strong> ROAS atual de ${roasAtual.toFixed(2)}x, bem acima do breakeven de ${roasMin.toFixed(2)}x. Projeção: <strong>${usd(lucroMensal)}/mês</strong> com ${vendasMes} vendas. Vale testar escalar o orçamento.`;
+    }
+    verdictEl.classList.add(vCls);
+    verdictEl.innerHTML = vHtml;
+    if (verdictEl._cls !== vCls) {
+      verdictEl.classList.remove('verdict-in');
+      void verdictEl.offsetWidth;
+      verdictEl.classList.add('verdict-in');
+      verdictEl._cls = vCls;
     }
 
     // Comparativo de canais (top 3 melhores)
@@ -1985,14 +2228,25 @@
     if (comparados.length === 0) {
       compareGrid.innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhum canal viável com os parâmetros atuais.</div>';
     } else {
-      compareGrid.innerHTML = comparados.map((c, i) => `
+      const maxLph = Math.max(...comparados.map(c => c.lph), 0);
+      const newW = {};
+      compareGrid.innerHTML = comparados.map((c, i) => {
+        newW[c.id] = maxLph > 0 ? Math.max(c.lph, 0) / maxLph * 100 : 0;
+        return `
         <div class="compare-col${i === 0 ? ' best' : ''}">
           <div class="compare-name">${c.nome}</div>
           <div class="compare-price">${usd(c.preco)}</div>
           <div class="compare-profit${c.lucro < 0 ? ' negative' : ''}">${usd(c.lucro)} líquido</div>
           <div class="compare-meta">${usd(c.lph)}/h · ${c.margemReal.toFixed(1)}%</div>
-        </div>
-      `).join('');
+          <div class="compare-bar"><span data-id="${c.id}" style="width:${compareBarPrev[c.id] || 0}%"></span></div>
+        </div>`;
+      }).join('');
+      void compareGrid.offsetWidth;
+      compareGrid.querySelectorAll('.compare-bar > span').forEach(sp => {
+        const w = newW[sp.dataset.id];
+        sp.style.width = w + '%';
+        compareBarPrev[sp.dataset.id] = w;
+      });
     }
 
     // Análise textual compacta (parágrafos curtos ao lado do donut)
@@ -2022,6 +2276,11 @@
   }
 
   // Inicializar
+  ['.left-stack', '.right-stack'].forEach(sel =>
+    document.querySelectorAll(sel + ' > *').forEach((el, i) => el.style.setProperty('--i', i)));
+  const roasPanel = document.querySelector('.roas-full-panel');
+  if (roasPanel) roasPanel.style.setProperty('--i', 5);
+  buildDonut();
   calcular();
 </script>
 </body>
